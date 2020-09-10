@@ -1,0 +1,40 @@
+```{r tabevent}
+
+tabevent_tmp_all <- CreateTableOne(
+  vars = c(
+    "sos_out_deathcvhosphf",
+    "sos_out_death",
+    "sos_out_deathcv",
+    "sos_out_deathhf",
+    "sos_out_hosphf",
+    "sos_out_hospcv",
+    "sos_out_hospnoncv",
+    "sos_out_deathhospstroke",
+    "sos_out_deathhospacs"
+  ),
+  data = pdata
+)
+
+tabevent_all <- print(tabevent_tmp_all,
+  varLabels = TRUE, missing = FALSE, printToggle = FALSE,
+  test = FALSE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+# remove space between ( %
+tabevent_all <- tabevent_all %>%
+  as.data.frame() %>%
+  mutate(across(everything(), str_replace_all, fixed("( "), "("))
+
+
+footnote(
+  mykable(tabevent_all,
+    caption = "N events",
+    rownames = TRUE
+  ),
+  general = c(
+    "Note that patients have different follow-up times and the n (%) for outcomes should therefore be presented with care."
+  )
+)
+```

@@ -1,0 +1,355 @@
+```{r tab_eventmod, cache=cacheon}
+survmy <- function(time, event, eventname,
+                   dosevarkont = "supremumdose", dosevarkat = "supremumdose_cat",
+                   novar = NULL) {
+  levs.bps <- levels(pdata$shf_bpsys_cat)
+  n.levs.bps <- length(levs.bps)
+  levs.st <- levels(pdata %>% pull(!!sym(dosevarkat)))
+  n.levs.st <- length(levs.st)
+
+  out <- data.frame(matrix(NA, ncol = 4, nrow = n.levs.bps * 2 + n.levs.st * 2 + 4))
+
+  colnames(out) <- c("Model", "Subgroup", "HR (95% CI)", "p-value")
+
+  modvarstmp <- modvars[modvars != "shf_bpsys"]
+  if (is.null(novar) == FALSE) modvarstmp <- modvarstmp[!modvarstmp %in% novar]
+
+  # for sbp
+  out[1, 1] <- paste0("Crude association Treatment (cont.) with ", eventname)
+  out[n.levs.bps + 2, 1] <- paste0("Adjusted association Treatment (cont.) with ", eventname)
+
+  for (i in seq_along(levs.bps)) {
+
+    # crude
+    out[i + 1, 2] <- paste("SBP", levs.bps[i])
+    bpsmod <- coxph(formula(paste0(
+      "Surv(", time, ", ", event, "== 'Yes') ~ ", dosevarkont,
+      " * relevel(shf_bpsys_cat, ref = '", levs.bps[i],
+      "')"
+    )),
+    data = pdata
+    )
+    bpsmods <- summary(bpsmod)
+
+    # hr + ci
+    out[i + 1, 3:4] <- c(
+      paste0(
+        dF(bpsmods$conf.int[1, 1], dig = 2),
+        " (", dF(bpsmods$conf.int[1, 3], dig = 2),
+        "-", dF(bpsmods$conf.int[1, 4], dig = 2), ")"
+      ),
+      dF(bpsmods$coef[1, 5], 3, p = TRUE)
+    )
+
+    # interaction effect
+    if (i == 1) {
+      out[1, 2] <- paste("p-value interaction SBP (cat.)*Treat (cont.)")
+      out[1, 4] <- dF(tail(car::Anova(bpsmod,
+        type = 3,
+        test.statistic = "Wald"
+      )$`Pr(>Chisq)`, n = 1),
+      dig = 3, p = TRUE
+      )
+    }
+
+    # adjusted
+    out[i + n.levs.bps + 2, 2] <- paste("SBP", levs.bps[i])
+    bpsmod <- with(impdata, coxph(formula(paste0(
+      "Surv(", time, ", ", event, "== 'Yes') ~", dosevarkont,
+      " * relevel(shf_bpsys_cat, ref = '", levs.bps[i],
+      "') + ", paste(modvarstmp, collapse = " + ")
+    ))))
+
+    # df the number of events minus the regression coefficients.
+    # There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+    bpsmods <- summary(pool(bpsmod,
+      dfcom = (bpsmod$analyses[[1]]$nevent - length(bpsmod$analyses[[1]]$coefficients))
+    ))
+
+    # hr + ci
+    out[i + n.levs.bps + 2, 3:4] <- c(
+      paste0(
+        dF(exp(bpsmods$estimate[1]), dig = 2),
+        " (", dF(exp(bpsmods$estimate[1] - global_z05 * bpsmods$std.error[1]), dig = 2),
+        "-", dF(exp(bpsmods$estimate[1] + global_z05 * bpsmods$std.error[1]), dig = 2), ")"
+      ),
+      dF(bpsmods$p.value[1], 3, p = TRUE)
+    )
+
+    # interaction effect
+    if (i == 1) {
+      out[n.levs.bps + 2, 2] <- paste("p-value interaction SBP (cat.)*Treat (cont.)")
+
+      pint <- with(impdata, car::Anova(coxph(formula(paste0(
+        "Surv(", time, ", ", event, "== 'Yes') ~", dosevarkont,
+        " * relevel(shf_bpsys_cat, ref = '", levs.bps[i],
+        "') + ", paste(modvarstmp, collapse = " + ")
+      ))),
+      type = "III", test.statistic = "Wald"
+      ))
+
+      nc <- length(pint$analyses[[1]]$Chisq)
+
+      chis2 <- c(
+        pint$analyses[[1]]$Chisq[nc],
+        pint$analyses[[2]]$Chisq[nc],
+        pint$analyses[[3]]$Chisq[nc],
+        pint$analyses[[4]]$Chisq[nc],
+        pint$analyses[[5]]$Chisq[nc],
+        pint$analyses[[6]]$Chisq[nc],
+        pint$analyses[[7]]$Chisq[nc],
+        pint$analyses[[8]]$Chisq[nc],
+        pint$analyses[[9]]$Chisq[nc],
+        pint$analyses[[10]]$Chisq[nc]
+      )
+
+      out[n.levs.bps + 2, 4] <- dF(miceadds::micombine.chisquare(
+        dk = chis2, df = pint$analyses[[1]]$Df[nc],
+        display = FALSE
+      )[2], dig = 3, p = TRUE)
+    }
+  }
+
+  out[n.levs.bps * 2 + 1 + 2, 1] <- paste0("Crude association SBP (cont.) with ", eventname)
+  out[n.levs.bps * 2 + n.levs.st + 1 + 3, 1] <- paste0("Adjusted association SBP (cont.) with ", eventname)
+
+  for (i in seq_along(levs.st)) {
+
+    # crude
+    out[n.levs.bps * 2 + i + 3, 2] <- paste("Treat", levs.st[i])
+    stmod <- coxph(formula(paste0(
+      "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys * relevel(",
+      dosevarkat, ", ref = '", levs.st[i],
+      "')"
+    )),
+    data = pdata
+    )
+    stmods <- summary(stmod)
+
+    # hr + ci
+    out[n.levs.bps * 2 + i + 3, 3:4] <- c(
+      paste0(
+        dF(stmods$conf.int[1, 1]^10, dig = 2),
+        " (", dF(stmods$conf.int[1, 3]^10, dig = 2),
+        "-", dF(stmods$conf.int[1, 4]^10, dig = 2), ")"
+      ),
+      dF(stmods$coef[1, 5], 3, p = TRUE)
+    )
+
+
+    # interaction effect
+    if (i == 1) {
+      out[n.levs.bps * 2 + i + 2, 2] <- paste("p-value interaction SBP (cont.)*Treat (cat.)")
+      out[n.levs.bps * 2 + i + 2, 4] <- dF(tail(car::Anova(stmod,
+        type = 3,
+        test.statistic = "Wald"
+      )$`Pr(>Chisq)`, n = 1),
+      dig = 3, p = TRUE
+      )
+    }
+
+    # adjusted
+    out[n.levs.bps * 2 + n.levs.st + i + 4, 2] <- paste("Treat", levs.st[i])
+    stmod <- with(impdata, coxph(formula(paste0(
+      "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys * relevel(",
+      dosevarkat, ", ref = '", levs.st[i],
+      "') + ", paste(modvarstmp, collapse = " + ")
+    ))))
+
+    # df the number of events minus the regression coefficients.
+    # There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+    stmods <- summary(pool(stmod,
+      dfcom = (stmod$analyses[[1]]$nevent - length(stmod$analyses[[1]]$coefficients))
+    ))
+
+    # hr + ci
+    out[n.levs.bps * 2 + n.levs.st + i + 4, 3:4] <- c(
+      paste0(
+        dF(exp(stmods$estimate[1] * 10), dig = 2),
+        " (", dF(exp((stmods$estimate[1] - global_z05 * stmods$std.error[1]) * 10), dig = 2),
+        "-", dF(exp((stmods$estimate[1] + global_z05 * stmods$std.error[1]) * 10), dig = 2), ")"
+      ),
+      dF(stmods$p.value[1], 3, p = TRUE)
+    )
+
+    # interaction effect
+    if (i == 1) {
+      out[n.levs.bps * 2 + n.levs.st + i + 3, 2] <- paste("p-value interaction SBP (cont.)*Treat (cat.)")
+
+      pint <- with(impdata, car::Anova(coxph(formula(paste0(
+        "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys * relevel(",
+        dosevarkat, ", ref = '", levs.st[i],
+        "') + ", paste(modvarstmp, collapse = " + ")
+      ))),
+      type = "III", test.statistic = "Wald"
+      ))
+
+      nc <- length(pint$analyses[[1]]$Chisq)
+
+      chis2 <- c(
+        pint$analyses[[1]]$Chisq[nc],
+        pint$analyses[[2]]$Chisq[nc],
+        pint$analyses[[3]]$Chisq[nc],
+        pint$analyses[[4]]$Chisq[nc],
+        pint$analyses[[5]]$Chisq[nc],
+        pint$analyses[[6]]$Chisq[nc],
+        pint$analyses[[7]]$Chisq[nc],
+        pint$analyses[[8]]$Chisq[nc],
+        pint$analyses[[9]]$Chisq[nc],
+        pint$analyses[[10]]$Chisq[nc]
+      )
+
+      out[n.levs.bps * 2 + n.levs.st + i + 3, 4] <- dF(miceadds::micombine.chisquare(
+        dk = chis2, df = pint$analyses[[1]]$Df[nc],
+        display = FALSE
+      )[2], dig = 3, p = TRUE)
+    }
+  }
+
+  return(out)
+}
+```
+
+```{r tab_eventmodsup, cache=cacheon, dependson="tab_eventmod"}
+# Supremum treatment variable
+
+cvmorthfhosp <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+cvmorthfhosp_sens <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH*",
+  dosevarkont = "supremumdose_sens",
+  dosevarkat = "supremumdose_sens_cat",
+  novar = c("shf_ras", "hf_bbl", "shf_mra", "shf_indexyear_cat")
+)
+
+mort <- survmy(
+  time = "sos_outtime_death", event = "sos_out_death",
+  eventname = "All-cause mortality",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+cvmort <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+hfmort <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathhf",
+  eventname = "HF mortality",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+hfhosp <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HFH",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+cvhosp <- survmy(
+  time = "sos_outtime_hospcv", event = "sos_out_hospcv",
+  eventname = "First CV hospitalization",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+noncvhosp <- survmy(
+  time = "sos_outtime_hospnoncv", event = "sos_out_hospnoncv",
+  eventname = "First Non-CV hospitalization",
+  novar = c("shf_ras", "hf_bbl", "shf_mra")
+)
+
+survout <- bind_rows(
+  cvmorthfhosp, cvmorthfhosp_sens, mort, cvmort,
+  hfmort, hfhosp, cvhosp, noncvhosp
+)
+
+footnote(mykable(survout,
+  caption = "Interaction between SBP and supremum treatment in Cox analysis.",
+  longtable = TRUE,
+  fontsize = 8
+) %>% landscape(),
+general = c("* consistency analysis from 2014 including MRA dose (only available from 2014)")
+)
+
+write.xlsx(survout, paste0("./output/tabs/eventtab_suptreat_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```
+
+```{r tab_eventmodras, cache=cacheon, dependson="tab_eventmod"}
+# RAS
+cvmorthfhosp_ras <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH",
+  dosevarkont = "shf_rasdosemax", dosevarkat = "shf_rasdosemax_cat",
+  novar = "shf_ras"
+)
+
+cvmort_ras <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD",
+  dosevarkont = "shf_rasdosemax", dosevarkat = "shf_rasdosemax_cat",
+  novar = "shf_ras"
+)
+
+survout_ras <- bind_rows(cvmorthfhosp_ras, cvmort_ras)
+
+mykable(survout_ras,
+  caption = "Interaction between SBP and ras in Cox analysis."
+)
+
+write.xlsx(survout_ras, paste0("./output/tabs/eventtab_ras_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```
+
+```{r tab_eventmodbbl, cache=cacheon, dependson="tab_eventmod"}
+# Bbl
+cvmorthfhosp_bbl <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH",
+  dosevarkont = "shf_bbldosemax", dosevarkat = "shf_bbldosemax_cat",
+  novar = "hf_bbl"
+)
+
+cvmort_bbl <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD",
+  dosevarkont = "shf_bbldosemax", dosevarkat = "shf_bbldosemax_cat",
+  novar = "shf_bbl"
+)
+
+survout_bbl <- bind_rows(cvmorthfhosp_bbl, cvmort_bbl)
+
+mykable(survout_bbl,
+  caption = "Interaction between SBP and Bbl in Cox analysis."
+)
+
+write.xlsx(survout_bbl, paste0("./output/tabs/eventtab_bbl_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```
+
+```{r tab_eventmodmra, cache=cacheon, dependson="tab_eventmod"}
+# MRA
+cvmorthfhosp_mra <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH",
+  dosevarkont = "shf_mradosemax_cat", dosevarkat = "shf_mradosemax_cat",
+  novar = "shf_mra"
+)
+
+cvmort_mra <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD",
+  dosevarkont = "shf_mradosemax_cat", dosevarkat = "shf_mradosemax_cat",
+  novar = "shf_mra"
+)
+
+survout_mra <- bind_rows(cvmorthfhosp_mra, cvmort_mra)
+
+mykable(survout_mra,
+  caption = "Interaction between SBP and mra (note no info on doses) in Cox analysis."
+)
+
+write.xlsx(survout_mra, paste0("./output/tabs/eventtab_mra_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```

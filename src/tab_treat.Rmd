@@ -1,0 +1,87 @@
+```{r tabtreat}
+
+treatvars <- c(
+  "shf_aceisub", "shf_arbsub", "shf_bblsub",
+  "shf_rasdosemax", "shf_bbldosemax", "shf_mradosemax",
+  "supremumdose_sens_cat"
+)
+
+pdata <- pdata %>%
+  mutate(shf_bblsub = droplevels(shf_bblsub))
+
+tabtreat_tmp_all <- CreateTableOne(
+  vars = treatvars,
+  data = pdata
+)
+
+tabtreat_all <- print(tabtreat_tmp_all,
+  varLabels = TRUE, missing = FALSE, printToggle = FALSE,
+  nonnormal = treatvars,
+  test = FALSE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+tabtreat_tmp <- CreateTableOne(
+  vars = treatvars,
+  strata = "supremumdose_cat",
+  data = pdata
+)
+
+tabtreat <- print(tabtreat_tmp,
+  varLabels = TRUE, missing = FALSE, printToggle = FALSE, test = FALSE,
+  nonnormal = treatvars,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+tabout <- cbind(tabtreat_all, tabtreat)
+
+tabout <- data.frame(rownames(tabout), tabout)
+colnames(tabout) <- sanitizeTextFunc(c(
+  "Variables", "Overall", "<50", "50%", "51-99%", "100%"
+))
+
+## fix footnotes and white space
+## white space removed in kable function.
+## fix in order to use escape = TRUE
+tabout <- tabout %>%
+  mutate(
+    Variablesforfoot = Variables,
+    Variables = sub("^ ", ". ", Variables),
+    Variables = sanitizeTextFunc(Variables)
+  )
+
+## add footnote about ras (arb, acei)
+
+tabout$Variables <- ifelse(stri_extract_first_words(tabout$Variablesforfoot) == "shf_mradosemax",
+  paste0(tabout$Variables, footnote_marker_symbol(1)), tabout$Variables
+)
+
+tabout$Variables <- ifelse(stri_extract_first_words(tabout$Variablesforfoot) == "supremumdose_sens_cat",
+  paste0(tabout$Variables, footnote_marker_symbol(2)), tabout$Variables
+)
+
+tabout <- tabout %>% select(-Variablesforfoot)
+
+# remove space between ( %
+tabout <- tabout %>%
+  mutate(across(everything(), str_replace_all, fixed("( "), "("))
+
+write.xlsx(tabout, paste0("./output/tabs/tab_treat_", Sys.Date(), ".xlsx"), rowNames = TRUE)
+
+footnote(
+  mykable(tabout,
+    caption = "Treatment characteristics",
+    rownames = FALSE,
+    escape = FALSE
+  ),
+  general = c(
+    "Categorical variables are presented with n (%) and continous variables with median [q1-q3]."
+  ),
+  symbol = c(
+    "MRA dose is only available from 2014 and is therefore not included in the calculation of the supremumdose variable.",
+    "Includes MRA dose (data only from 2014)."
+  )
+)
+```

@@ -1,0 +1,15 @@
+```{r histogrambpsys, fig.cap="Change in Systolic blood pressure between first two visits"}
+ggplot(pdata_change, aes(shf_bpsys_diff)) +
+  geom_histogram(binwidth = 5, col = global_kicols[1]) +
+  theme_minimal() +
+  xlab("Change in systolic blood pressure") +
+  ylab("Count")
+```
+
+```{r histogramst, fig.cap="Change in supremum tretment variable between first two visits"}
+ggplot(pdata_change, aes(supremumdose_diff)) +
+  geom_histogram(col = global_kicols[1]) +
+  theme_minimal() +
+  xlab("Change in supremum treatment") +
+  ylab("Count")
+```

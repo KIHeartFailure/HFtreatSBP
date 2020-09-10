@@ -1,0 +1,161 @@
+```{r forestuni, fig.cap="Crude Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
+
+modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
+
+# crude
+moduni <- coxph(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ sysbp_suptreat, data = pdata)
+modunis <- summary(moduni)
+
+labs <- levels(pdata$sysbp_suptreat)
+loghr <- c(0, modunis$coefficients[, 1])
+loglci <- c(0, log(modunis$conf.int[, 3]))
+loguci <- c(0, log(modunis$conf.int[, 4]))
+hrci <- paste0(
+  dF(exp(loghr), 1), " (",
+  dF(exp(loglci), 1), "-",
+  dF(exp(loguci), 1), ")"
+)
+hrci[1] <- "ref"
+
+nf <- length(loghr)
+# exp(min(loglci, na.rm = T))
+# exp(max(loguci, na.rm = T))
+
+# c(bottom, left, top, right)
+par(mar = c(2, 17, 1, 2) + 0.2)
+
+cextext <- 0.9
+
+plot(rev(loghr), 1:nf,
+  cex = 1.2,
+  xlim = c(
+    log(.9),
+    log(5.5)
+  ),
+  xlab = NA,
+  ylim = c(1, nf + .4),
+  axes = FALSE,
+  ylab = NA,
+  main = NA,
+  type = "p",
+  pch = 22,
+  bg = global_kicols[1],
+  col = global_kicols[1]
+)
+
+for (i in 1:nf) {
+  matplot(c(rev(loglci)[i], rev(loguci)[i]), c(i, i),
+    type = "l", add = TRUE, col = global_kicols[1], cex = 2
+  )
+}
+
+matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+atmy <- seq(0.9, 5.5, 0.1)
+atmy2 <- atmy
+atmy2[!atmy %in% c(1, 2, 3, 4, 5)] <- NA
+axis(1,
+  cex.axis = cextext, at = log(atmy),
+  labels = atmy2
+)
+axis(1,
+  cex.axis = cextext, at = log(5),
+  labels = 5
+)
+axis(2,
+  at = 1:nf,
+  labels = rev(labs),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
+)
+
+axis(2,
+  at = c(1:nf, nf + 1),
+  labels = c(rev(hrci), "HR (95% CI)"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
+)
+```
+
+```{r forestadj, fig.cap="Adjusted Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
+
+modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
+
+# adjusted
+modm <- with(impdata, coxph(formula(paste0(
+  "Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == 'Yes') ~ sysbp_suptreat + ", paste(modvarstmp, collapse = " + ")
+))))
+
+# df the number of events minus the regression coefficients.
+# There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+modms <- summary(pool(modm,
+  dfcom = (modm$analyses[[1]]$nevent - length(modm$analyses[[1]]$coefficients))
+))
+
+labs <- levels(pdata$sysbp_suptreat)
+nf <- length(labs)
+
+loghr <- c(0, modms$estimate[1:nf - 1])
+loglci <- c(0, modms$estimate[1:nf - 1] - global_z05 * modms$std.error[1:nf - 1])
+loguci <- c(0, modms$estimate[1:nf - 1] + global_z05 * modms$std.error[1:nf - 1])
+hrci <- paste0(
+  dF(exp(loghr), 1), " (",
+  dF(exp(loglci), 1), "-",
+  dF(exp(loguci), 1), ")"
+)
+hrci[1] <- "ref"
+
+# exp(min(loglci, na.rm = T))
+# exp(max(loguci, na.rm = T))
+
+# c(bottom, left, top, right)
+par(mar = c(2, 17, 1, 2) + 0.2)
+
+cextext <- 0.9
+
+plot(rev(loghr), 1:nf,
+  cex = 1.2,
+  xlim = c(
+    log(.9),
+    log(3.5)
+  ),
+  xlab = NA,
+  ylim = c(1, nf + .4),
+  axes = FALSE,
+  ylab = NA,
+  main = NA,
+  type = "p",
+  pch = 22,
+  bg = global_kicols[1],
+  col = global_kicols[1]
+)
+
+for (i in 1:nf) {
+  matplot(c(rev(loglci)[i], rev(loguci)[i]), c(i, i),
+    type = "l", add = TRUE, col = global_kicols[1], cex = 2
+  )
+}
+
+matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+atmy <- seq(0.9, 3.5, 0.1)
+atmy2 <- atmy
+atmy2[!atmy %in% c(1, 1.5, 2, 2.5, 3, 3.5)] <- NA
+axis(1,
+  cex.axis = cextext, at = log(atmy),
+  labels = atmy2
+)
+axis(1,
+  cex.axis = cextext, at = log(5),
+  labels = 5
+)
+axis(2,
+  at = 1:nf,
+  labels = rev(labs),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
+)
+
+axis(2,
+  at = c(1:nf, nf + 1),
+  labels = c(rev(hrci), "HR (95% CI)"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
+)
+```

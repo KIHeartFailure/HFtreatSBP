@@ -1,0 +1,251 @@
+---
+title: 'Statistical report: Interaction between HF treatment dosage and blood pressure for clinical outcome'
+subtitle: 'DRAFT'
+author: 'Statistician: Lina Benson'
+  
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    fig_caption: yes
+    fig_height: 7
+    fig_width: 7
+    number_sections: yes
+link-citations: yes
+bibliography: references.bib
+nocite: '@*'
+header-includes:
+   - \usepackage{draftwatermark}
+---
+
+\newpage 
+\tableofcontents 
+\listoffigures
+\listoftables
+\newpage
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, include = TRUE, comment = "",
+  warning = FALSE, message = FALSE, fig.pos = "H",
+  fig.path = "../output/figs/"
+)
+options(knitr.kable.NA = "")
+```
+
+```{r adjust_directory_if_needed, include=FALSE}
+# Uncomment lines below if rmd file is placed in a subdirectory
+knitr::opts_knit$set(root.dir = normalizePath("../"))
+```
+
+```{r load_project}
+# 1. Set options in config/global.dcf
+# 2. Load packages listed in config/global.dcf
+# 3. Import functions and code in lib directory
+
+ProjectTemplate::reload.project()
+
+cacheon <- TRUE
+```             
+
+# Data handling
+
+## Data source
+
+SHFDB3, https://kiheartfailure.github.io/shfdb3/, v 3.1.5. 
+
+## Inclusion/exclusion criteria
+
+```{r flow}
+mykable(flow, caption = "Flowchart")
+```
+
+First patient in: `r min(pdata$shf_indexdtm)` and last patient in: 
+`r max(pdata$shf_indexdtm)`. 
+Median age (IQR): 
+`r pdata %>% summarise(med = dF(median(shf_age), dig = 1),
+                       q1 = dF(quantile(shf_age, probs = 0.25), dig = 1),
+                       q3 = dF(quantile(shf_age, probs = 0.75), dig = 1)) %>%
+              mutate(out = paste0(med, " (", q1, "-", q3, ")")) %>%
+              pull(out)` and 
+`r pdata %>% count(shf_sex) %>%
+  mutate(perc = dF(n / sum(n) * 100, 1)) %>%
+  filter(shf_sex == "Female") %>%
+  pull(perc)`% females.
+  
+## Created variables 
+
+```{r outcodes}
+mykable(metaout, caption = "Additional outcomes from NPR/Cause of Death Registry")
+```
+
+The supremum treatment variable is created as follows:
+
+```{r codesuptret, code = readLines("../munge/02-suptreatvar.R"), echo = TRUE, eval = FALSE}
+
+```
+
+Note that mra is assumed to give 1 point if receiving mra at all since mra dose was 
+not collected in the registry until 2014. 
+
+Throughout the doses presented are % of target dose.
+
+# Statistical analysis 
+
+## General
+
+All analyses were performed using `r sessionInfo()$R.version$version.string` [@r]. 
+The level of significance is set to 5%, two-sided. No adjustment for multiple 
+comparisons were made and therefore the results should be viewed with some care.
+
+## Missing data
+
+Missing data was imputed with multiple imputation using mice [@mice] for 
+10 dataset and 10 iterations. Variables included in the model are indicated 
+in Table \ref{tab:tab1}. The primary outcome, CVD/First HFH (cardiovascular 
+death or first heart failure hospitalization), was included 
+as the Nelson-Aalen estimator.
+
+## Baseline characteristics
+
+```{r, child = "../src/tab1.Rmd"}
+
+```
+
+```{r, child = "../src/tab_treat.Rmd"}
+
+```
+
+## Systolic blood pressure cut-offs
+
+The functional form of systolic blood pressure modelled with a natural cubic spline 
+with knots placed at the quintiles of sbp in a cox regression is plotted. 
+Partly for the primary outcome, cvd/1 hf hosp, and partly for cvd as outcome. 
+The curve is centered at the median sys bp. 
+
+```{r, child = "../src/spline_ass_out_sbp.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+## Outcomes
+
+Kaplan-Meier curves for CVD/First HFH are presented for the supremum treatment variable, ras, bbl and
+mra. 
+
+Crude and adjusted cox proportional hazards regressions were used to evaluate the association 
+between the supremum dose variable/systolic blood pressure and the respective outcomes. 
+Adjustment is performed for the variables indicated in Table \ref{tab:tab1}.
+
+In order to present the supremum dose variable and systolic blood pressure 
+in subgroups they are modelled with an interaction term. 
+The HR (95% CI) presented is for continuous systolic blood pressure in units of 10
+in the supremum treat subgroups and the continuous supremum treat variable in the 
+systolic blood pressure subgroups (so the HR are from separate models, with the 
+categorical and continuous SBP and treat interchanging).  
+
+In the models with the supremum treatment variable ras, bbl and mra are not 
+included as separate variables in the models. For the individual medications 
+0 = no medication, 0.5 = <50% of target dose, 1 = >= 50% of target dose. 
+For MRA 0 = no medication, 1 = medication since MRA dose was not 
+collected in SwedeHF prior to 2014. A consistency analysis was therefore 
+performed for the primary endpoint with only 
+observations from 2014 with mra dose included in the supremum treatment variable. 
+
+Data were censored at 2018-12-31 or death/emigration, 
+so this assumes that the risk of hf hospitalization 
+would have been the same for a censored patient had the censoring not occurred. 
+
+### Assumptions
+
+To be checked...
+
+```{r, child = "../src/tab_event.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+```{r, child = "../src/km.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+```{r, child = "../src/tab_eventmod.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+Forest plot presenting the HR and 95% CI from a cox model with the variable  
+systolic bp * sumpremum treatment. Both are categorical (in the table one is 
+continuous). The group with high bp and high treatment is the reference. 
+
+```{r, child = "../src/fig_hr.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+## Changes in SBP and HF medication dose (objective C)
+
+The patients with a prior visit fulfilling the inclusion and none of the exclusion 
+criteria were selected. 
+
+A change variable was created defined as: 
+
+- Stable group = Decrease in SBP between second last and last visit with less 
+than 10 mmHg.
+
+- Decrease SBP + increase treat = Decrease in SBP between second last and last 
+visit with 10 mmHg or more and an increase in the supremum treatment variable.
+
+- Decrease SBP + stable treat = Decrease in SBP between second last and last 
+visit with 10 mmHg or more and a stable and decrease in the supremum treatment variable.
+
+The baseline variables presented in the table and adjusted for in the models 
+are from the LAST visit. 
+
+```{r}
+pdata_change <- pdata %>%
+  filter(!is.na(treatsbp_diff))
+```
+
+```{r, child = "../src/histogram_change.Rmd"}
+
+```
+
+```{r, child = "../src/tab1_change.Rmd"}
+
+```
+
+```{r, child = "../src/tab_eventmod_change.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+# Reproducibility
+
+## R session information {#sessioninfo}
+
+```{r sessinfo}
+sessionInfo()
+```
+
+## R code
+
+The R code for all data handling and statistical analyses will be found 
+https://github.com/KIHeartFailure/HFtreatSBP on publication. It is possible to
+link to it from the resulting paper for increased transparency and code sharing. 
+No data or output is stored in the repository. 
+
+# References
