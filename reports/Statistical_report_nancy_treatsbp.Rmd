@@ -176,6 +176,13 @@ To be checked...
 \clearpage
 \newpage
 
+```{r, child = "../src/tab_eventmod_overall.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
 ```{r, child = "../src/tab_eventmod.Rmd"}
 
 ```

@@ -1,0 +1,103 @@
+```{r tab_eventmodoverall, cache=cacheon}
+survmy <- function(time, event, eventname) {
+  out <- data.frame(matrix(NA, ncol = 3, nrow = 2))
+
+  colnames(out) <- c("Model", "HR (95% CI)", "p-value")
+
+  modvarstmp <- modvars[modvars != "shf_bpsys"]
+
+  out[1, 1] <- paste0("Crude association SBP (cont.) with ", eventname)
+  out[2, 1] <- paste0("Adjusted association SBP (cont.) with ", eventname)
+
+  # crude
+  bpsmod <- coxph(formula(paste0(
+    "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys"
+  )),
+  data = pdata
+  )
+  bpsmods <- summary(bpsmod)
+
+  # hr + ci
+  out[1, 2:3] <- c(
+    paste0(
+      dF(bpsmods$conf.int[1, 1]^10, dig = 2),
+      " (", dF(bpsmods$conf.int[1, 3]^10, dig = 2),
+      "-", dF(bpsmods$conf.int[1, 4]^10, dig = 2), ")"
+    ),
+    dF(bpsmods$coef[1, 5], 3, p = TRUE)
+  )
+
+  # adjusted
+  bpsmod <- with(impdata, coxph(formula(paste0(
+    "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys + ", paste(modvarstmp, collapse = " + ")
+  ))))
+
+  # df the number of events minus the regression coefficients.
+  # There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+  bpsmods <- summary(pool(bpsmod,
+    dfcom = (bpsmod$analyses[[1]]$nevent - length(bpsmod$analyses[[1]]$coefficients))
+  ))
+
+  # hr + ci
+  out[2, 2:3] <- c(
+    paste0(
+      dF(exp(bpsmods$estimate[1] * 10), dig = 2),
+      " (", dF(exp((bpsmods$estimate[1] - global_z05 * bpsmods$std.error[1]) * 10), dig = 2),
+      "-", dF(exp((bpsmods$estimate[1] + global_z05 * bpsmods$std.error[1]) * 10), dig = 2), ")"
+    ),
+    dF(bpsmods$p.value[1], 3, p = TRUE)
+  )
+
+  return(out)
+}
+```
+
+```{r tab_eventmodoverallstats, cache=cacheon, dependson="tab_eventmodoverall"}
+cvmorthfhosp <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH"
+)
+
+mort <- survmy(
+  time = "sos_outtime_death", event = "sos_out_death",
+  eventname = "All-cause mortality"
+)
+
+cvmort <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD"
+)
+
+hfmort <- survmy(
+  time = "sos_outtime_death", event = "sos_out_deathhf",
+  eventname = "HF mortality"
+)
+
+hfhosp <- survmy(
+  time = "sos_outtime_hosphf", event = "sos_out_hosphf",
+  eventname = "First HFH"
+)
+
+cvhosp <- survmy(
+  time = "sos_outtime_hospcv", event = "sos_out_hospcv",
+  eventname = "First CV hospitalization"
+)
+
+noncvhosp <- survmy(
+  time = "sos_outtime_hospnoncv", event = "sos_out_hospnoncv",
+  eventname = "First Non-CV hospitalization"
+)
+
+survout <- bind_rows(
+  cvmorthfhosp, mort, cvmort,
+  hfmort, hfhosp, cvhosp, noncvhosp
+)
+
+footnote(mykable(survout,
+  caption = "Overall association between SBP and outcomes in Cox analysis."
+),
+general = c("SBP presented in units of 10")
+)
+
+write.xlsx(survout, paste0("./output/tabs/eventtab_overallsbp_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```

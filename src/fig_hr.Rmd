@@ -6,7 +6,10 @@ modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra
 moduni <- coxph(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ sysbp_suptreat, data = pdata)
 modunis <- summary(moduni)
 
-labs <- levels(pdata$sysbp_suptreat)
+#labs <- levels(pdata$sysbp_suptreat)
+labs1 <- rep(c("SBP >=140 mmHg", "SBP 120-139 mmHg", "SBP 100-119 mmHg", "SBP 90-99 mmHg", "SBP <90 mmHg"), each = 4)
+labs2 <- rep(c("ST 100%", "ST 51-99%", "ST 50%", "ST<50%"), 5)
+  
 loghr <- c(0, modunis$coefficients[, 1])
 loglci <- c(0, log(modunis$conf.int[, 3]))
 loguci <- c(0, log(modunis$conf.int[, 4]))
@@ -17,7 +20,15 @@ hrci <- paste0(
 )
 hrci[1] <- "ref"
 
-nf <- length(loghr)
+outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci))
+outforest <- rbind(outforest[1:4, ], rep(NA, 6), 
+                   outforest[5:8, ], rep(NA, 6), 
+                   outforest[9:12, ], rep(NA, 6), 
+                   outforest[13:16, ], rep(NA, 6), 
+                   outforest[17:20, ])
+outforest <- outforest %>% arrange(desc(row_number()))
+
+nf <- nrow(outforest)
 # exp(min(loglci, na.rm = T))
 # exp(max(loguci, na.rm = T))
 
@@ -26,7 +37,7 @@ par(mar = c(2, 17, 1, 2) + 0.2)
 
 cextext <- 0.9
 
-plot(rev(loghr), 1:nf,
+plot(outforest$loghr, 1:nf,
   cex = 1.2,
   xlim = c(
     log(.9),
@@ -44,9 +55,8 @@ plot(rev(loghr), 1:nf,
 )
 
 for (i in 1:nf) {
-  matplot(c(rev(loglci)[i], rev(loguci)[i]), c(i, i),
-    type = "l", add = TRUE, col = global_kicols[1], cex = 2
-  )
+  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i), 
+      col = global_kicols[1], cex = 2)
 }
 
 matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
@@ -62,15 +72,21 @@ axis(1,
   cex.axis = cextext, at = log(5),
   labels = 5
 )
+
 axis(2,
   at = 1:nf,
-  labels = rev(labs),
+  labels = outforest$labs2,
+  cex.axis = cextext, tick = FALSE, las = 2, line = 8, hadj = 0
+)
+axis(2,
+  at = seq(2.5, nf, 5),
+  labels = unique(rev(labs1)),
   cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
 )
 
 axis(2,
   at = c(1:nf, nf + 1),
-  labels = c(rev(hrci), "HR (95% CI)"),
+  labels = c(outforest$hrci, "HR (95% CI)"),
   cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
 )
 ```
@@ -90,18 +106,29 @@ modms <- summary(pool(modm,
   dfcom = (modm$analyses[[1]]$nevent - length(modm$analyses[[1]]$coefficients))
 ))
 
-labs <- levels(pdata$sysbp_suptreat)
-nf <- length(labs)
+labs1 <- rep(c("SBP >=140 mmHg", "SBP 120-139 mmHg", "SBP 100-119 mmHg", "SBP 90-99 mmHg", "SBP <90 mmHg"), each = 4)
+labs2 <- rep(c("ST 100%", "ST 51-99%", "ST 50%", "ST<50%"), 5)
 
-loghr <- c(0, modms$estimate[1:nf - 1])
-loglci <- c(0, modms$estimate[1:nf - 1] - global_z05 * modms$std.error[1:nf - 1])
-loguci <- c(0, modms$estimate[1:nf - 1] + global_z05 * modms$std.error[1:nf - 1])
+loghr <- c(0, modms$estimate[1:length(labs1) - 1])
+loglci <- c(0, modms$estimate[1:length(labs1) - 1] - global_z05 * modms$std.error[1:length(labs1) - 1])
+loguci <- c(0, modms$estimate[1:length(labs1) - 1] + global_z05 * modms$std.error[1:length(labs1) - 1])
 hrci <- paste0(
   dF(exp(loghr), 1), " (",
   dF(exp(loglci), 1), "-",
   dF(exp(loguci), 1), ")"
 )
 hrci[1] <- "ref"
+
+
+outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci))
+outforest <- rbind(outforest[1:4, ], rep(NA, 6), 
+                   outforest[5:8, ], rep(NA, 6), 
+                   outforest[9:12, ], rep(NA, 6), 
+                   outforest[13:16, ], rep(NA, 6), 
+                   outforest[17:20, ])
+outforest <- outforest %>% arrange(desc(row_number()))
+
+nf <- nrow(outforest)
 
 # exp(min(loglci, na.rm = T))
 # exp(max(loguci, na.rm = T))
@@ -111,7 +138,7 @@ par(mar = c(2, 17, 1, 2) + 0.2)
 
 cextext <- 0.9
 
-plot(rev(loghr), 1:nf,
+plot(outforest$loghr, 1:nf,
   cex = 1.2,
   xlim = c(
     log(.9),
@@ -129,9 +156,8 @@ plot(rev(loghr), 1:nf,
 )
 
 for (i in 1:nf) {
-  matplot(c(rev(loglci)[i], rev(loguci)[i]), c(i, i),
-    type = "l", add = TRUE, col = global_kicols[1], cex = 2
-  )
+  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i), 
+      col = global_kicols[1], cex = 2)
 }
 
 matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
@@ -147,15 +173,21 @@ axis(1,
   cex.axis = cextext, at = log(5),
   labels = 5
 )
+
 axis(2,
   at = 1:nf,
-  labels = rev(labs),
+  labels = outforest$labs2,
+  cex.axis = cextext, tick = FALSE, las = 2, line = 8, hadj = 0
+)
+axis(2,
+  at = seq(2.5, nf, 5),
+  labels = unique(rev(labs1)),
   cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
 )
 
 axis(2,
   at = c(1:nf, nf + 1),
-  labels = c(rev(hrci), "HR (95% CI)"),
+  labels = c(outforest$hrci, "HR (95% CI)"),
   cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
 )
 ```

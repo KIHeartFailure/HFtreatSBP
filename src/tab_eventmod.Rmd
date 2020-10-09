@@ -273,7 +273,10 @@ footnote(mykable(survout,
   longtable = TRUE,
   fontsize = 8
 ) %>% landscape(),
-general = c("* consistency analysis from 2014 including MRA dose (only available from 2014)")
+general = c(
+  "* consistency analysis from 2014 including MRA dose (only available from 2014)",
+  "SBP presented in units of 10"
+)
 )
 
 write.xlsx(survout, paste0("./output/tabs/eventtab_suptreat_", Sys.Date(), ".xlsx"), rowNames = FALSE)
@@ -297,8 +300,10 @@ cvmort_ras <- survmy(
 
 survout_ras <- bind_rows(cvmorthfhosp_ras, cvmort_ras)
 
-mykable(survout_ras,
+footnote(mykable(survout_ras,
   caption = "Interaction between SBP and ras in Cox analysis."
+),
+general = c("SBP presented in units of 10")
 )
 
 write.xlsx(survout_ras, paste0("./output/tabs/eventtab_ras_", Sys.Date(), ".xlsx"), rowNames = FALSE)
@@ -322,8 +327,10 @@ cvmort_bbl <- survmy(
 
 survout_bbl <- bind_rows(cvmorthfhosp_bbl, cvmort_bbl)
 
-mykable(survout_bbl,
+footnote(mykable(survout_bbl,
   caption = "Interaction between SBP and Bbl in Cox analysis."
+),
+general = c("SBP presented in units of 10")
 )
 
 write.xlsx(survout_bbl, paste0("./output/tabs/eventtab_bbl_", Sys.Date(), ".xlsx"), rowNames = FALSE)
@@ -347,8 +354,10 @@ cvmort_mra <- survmy(
 
 survout_mra <- bind_rows(cvmorthfhosp_mra, cvmort_mra)
 
-mykable(survout_mra,
+footnote(mykable(survout_mra,
   caption = "Interaction between SBP and mra (note no info on doses) in Cox analysis."
+),
+general = c("SBP presented in units of 10")
 )
 
 write.xlsx(survout_mra, paste0("./output/tabs/eventtab_mra_", Sys.Date(), ".xlsx"), rowNames = FALSE)
