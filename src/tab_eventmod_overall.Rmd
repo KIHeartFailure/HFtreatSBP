@@ -4,7 +4,7 @@ survmy <- function(time, event, eventname) {
 
   colnames(out) <- c("Model", "HR (95% CI)", "p-value")
 
-  modvarstmp <- modvars[modvars != "shf_bpsys"]
+  modvarstmp <- modvarsnsstrata[modvarsnsstrata != "shf_bpsys"]
 
   out[1, 1] <- paste0("Crude association SBP (cont.) with ", eventname)
   out[2, 1] <- paste0("Adjusted association SBP (cont.) with ", eventname)

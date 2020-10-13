@@ -11,7 +11,6 @@ pdata <- rsdata315 %>%
       shf_arb == "Yes" | shf_acei == "Yes" ~ "Yes",
       TRUE ~ "No"
     ),
-
     shf_aceidosemax = case_when(
       shf_aceisub == "Captopril" ~ shf_aceidose / 150,
       shf_aceisub == "Cilazapril" ~ shf_aceidose / 5,
@@ -52,27 +51,30 @@ pdata <- rsdata315 %>%
       shf_bbldosemax < 0.5 ~ 0.5,
       shf_bbldosemax >= 0.5 ~ 1
     ),
-    shf_mradosemax_cat = case_when(
+    shf_mradosemax = case_when(
       shf_mra == "No" ~ 0,
       shf_mra == "Yes" ~ 1
     ),
-    shf_mradosemax = case_when(
+    shf_mradosemax_cat = shf_mradosemax,
+    shf_mradosemax_sens = case_when(
       shf_indexyear < 2014 ~ NA_real_,
       shf_mra == "No" ~ 0,
       shf_mra == "Yes" ~ shf_mradose / 50
-      ),
+    ),
     shf_mradosemax_cat_sens = case_when(
       shf_indexyear < 2014 ~ NA_real_,
       shf_mra == "No" ~ 0,
-      shf_mradosemax < 1 ~ 0.5,
-      shf_mradosemax >= 1 ~ 1
+      shf_mradosemax_sens < 1 ~ 0.5,
+      shf_mradosemax_sens >= 1 ~ 1
     ),
-    supremumdose = round((shf_rasdosemax_cat + 
-                            shf_bbldosemax_cat + 
-                            shf_mradosemax_cat) / 3, 2),
-    supremumdose_sens = round((shf_rasdosemax_cat + 
-                                 shf_bbldosemax_cat + 
-                                 shf_mradosemax_cat_sens) / 3, 2),
+    
+    supremumdose = round((shf_rasdosemax_cat +
+      shf_bbldosemax_cat +
+      shf_mradosemax_cat) / 3, 2),
+    supremumdose_sens = round((shf_rasdosemax_cat +
+      shf_bbldosemax_cat +
+      shf_mradosemax_cat_sens) / 3, 2),
+  
     supremumdose_cat = factor(case_when(
       supremumdose < 0.5 ~ 1,
       supremumdose == 0.5 ~ 2,
@@ -90,6 +92,25 @@ pdata <- rsdata315 %>%
     ),
     labels = c("<50%", "50%", "51-99%", "100%"),
     levels = 1:4
+    ),
+    
+    shf_rasdosemax_cat = factor(shf_rasdosemax_cat,
+                                labels = c("No", "<50%", ">=50%"),
+                                levels = c(0, 0.5, 1)
+    ),
+    
+    shf_bbldosemax_cat = factor(shf_bbldosemax_cat,
+                                labels = c("No", "<50%", ">=50%"),
+                                levels = c(0, 0.5, 1)
+    ),
+    
+    shf_mradosemax_cat = factor(shf_mradosemax_cat,
+                                labels = c("No", "Yes"),
+                                levels = c(0, 1)
+    ),
+    
+    shf_mradosemax_cat_sens = factor(shf_mradosemax_cat_sens,
+                                     labels = c("No", "<100%", ">=100%"),
+                                     levels = c(0, 0.5, 1)
     )
-  ) %>%
-  mutate_at(c("shf_rasdosemax_cat", "shf_bbldosemax_cat", "shf_mradosemax_cat"), factor)
+  ) 

@@ -18,3 +18,6 @@ ProjectTemplate::cache("impdata")
 
 ProjectTemplate::cache("tabvars")
 ProjectTemplate::cache("modvars")
+ProjectTemplate::cache("kontvars")
+ProjectTemplate::cache("stratavars")
+ProjectTemplate::cache("modvarsnsstrata")

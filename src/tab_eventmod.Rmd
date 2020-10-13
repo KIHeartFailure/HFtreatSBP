@@ -11,7 +11,7 @@ survmy <- function(time, event, eventname,
 
   colnames(out) <- c("Model", "Subgroup", "HR (95% CI)", "p-value")
 
-  modvarstmp <- modvars[modvars != "shf_bpsys"]
+  modvarstmp <- modvarsnsstrata[modvarsnsstrata != "shf_bpsys"]
   if (is.null(novar) == FALSE) modvarstmp <- modvarstmp[!modvarstmp %in% novar]
 
   # for sbp
@@ -129,9 +129,9 @@ survmy <- function(time, event, eventname,
     # hr + ci
     out[n.levs.bps * 2 + i + 3, 3:4] <- c(
       paste0(
-        dF(stmods$conf.int[1, 1]^10, dig = 2),
-        " (", dF(stmods$conf.int[1, 3]^10, dig = 2),
-        "-", dF(stmods$conf.int[1, 4]^10, dig = 2), ")"
+        dF(stmods$conf.int[1, 1] ^ 10, dig = 2),
+        " (", dF(stmods$conf.int[1, 3] ^ 10, dig = 2),
+        "-", dF(stmods$conf.int[1, 4] ^ 10, dig = 2), ")"
       ),
       dF(stmods$coef[1, 5], 3, p = TRUE)
     )
@@ -216,7 +216,7 @@ survmy <- function(time, event, eventname,
 cvmorthfhosp <- survmy(
   time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
   eventname = "CVD/First HFH",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 cvmorthfhosp_sens <- survmy(
@@ -224,43 +224,43 @@ cvmorthfhosp_sens <- survmy(
   eventname = "CVD/First HFH*",
   dosevarkont = "supremumdose_sens",
   dosevarkat = "supremumdose_sens_cat",
-  novar = c("shf_ras", "hf_bbl", "shf_mra", "shf_indexyear_cat")
+  novar = c("shf_ras", "shf_bbl", "shf_mra", "shf_indexyear_cat")
 )
 
 mort <- survmy(
   time = "sos_outtime_death", event = "sos_out_death",
   eventname = "All-cause mortality",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 cvmort <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathcv",
   eventname = "CVD",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 hfmort <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathhf",
   eventname = "HF mortality",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 hfhosp <- survmy(
   time = "sos_outtime_hosphf", event = "sos_out_hosphf",
   eventname = "First HFH",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 cvhosp <- survmy(
   time = "sos_outtime_hospcv", event = "sos_out_hospcv",
   eventname = "First CV hospitalization",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 noncvhosp <- survmy(
   time = "sos_outtime_hospnoncv", event = "sos_out_hospnoncv",
   eventname = "First Non-CV hospitalization",
-  novar = c("shf_ras", "hf_bbl", "shf_mra")
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
 survout <- bind_rows(
@@ -315,7 +315,7 @@ cvmorthfhosp_bbl <- survmy(
   time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
   eventname = "CVD/First HFH",
   dosevarkont = "shf_bbldosemax", dosevarkat = "shf_bbldosemax_cat",
-  novar = "hf_bbl"
+  novar = "shf_bbl"
 )
 
 cvmort_bbl <- survmy(
@@ -341,14 +341,14 @@ write.xlsx(survout_bbl, paste0("./output/tabs/eventtab_bbl_", Sys.Date(), ".xlsx
 cvmorthfhosp_mra <- survmy(
   time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
   eventname = "CVD/First HFH",
-  dosevarkont = "shf_mradosemax_cat", dosevarkat = "shf_mradosemax_cat",
+  dosevarkont = "shf_mradosemax", dosevarkat = "shf_mradosemax_cat",
   novar = "shf_mra"
 )
 
 cvmort_mra <- survmy(
   time = "sos_outtime_death", event = "sos_out_deathcv",
   eventname = "CVD",
-  dosevarkont = "shf_mradosemax_cat", dosevarkat = "shf_mradosemax_cat",
+  dosevarkont = "shf_mradosemax", dosevarkat = "shf_mradosemax_cat",
   novar = "shf_mra"
 )
 

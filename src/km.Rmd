@@ -1,5 +1,5 @@
 ```{r kmfunc, cache=cacheon}
-kmfunc <- function(subsetmy, ylabmy = "CV mortality/first HF hospitalisation (%)") {
+kmfunc <- function(subsetmy, ylabmy = "CVD/first HF hospitalisation (%)") {
   fit <- survfit(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ shf_bpsys_cat,
     data = pdata, subset = subsetmy
   )
@@ -20,50 +20,50 @@ kmfunc <- function(subsetmy, ylabmy = "CV mortality/first HF hospitalisation (%)
 }
 ```
 
-```{r kmst1, fig.cap="Kaplan-Meier CVD/First HFH - Supremum dose < 50%", cache=cacheon, dependson="kmfunc"}
+```{r kmst1, fig.cap="Kaplan-Meier CVD/First HFH - Supremum treatment dose <50%", cache=cacheon, dependson="kmfunc"}
 kmfunc(subsetmy = pdata$supremumdose_cat == "<50%")
 ```
 
-```{r kmst2, fig.cap="Kaplan-Meier CVD/First HFH - Supremum dose 50%", cache=cacheon, dependson="kmfunc"}
+```{r kmst2, fig.cap="Kaplan-Meier CVD/First HFH - Supremum treatment dose 50%", cache=cacheon, dependson="kmfunc"}
 kmfunc(subsetmy = pdata$supremumdose_cat == "50%")
 ```
 
-```{r kmst3, fig.cap="Kaplan-Meier CVD/First HFH - Supremum dose 51-99%", cache=cacheon, dependson="kmfunc"}
+```{r kmst3, fig.cap="Kaplan-Meier CVD/First HFH - Supremum treatment dose 51-99%", cache=cacheon, dependson="kmfunc"}
 kmfunc(subsetmy = pdata$supremumdose_cat == "51-99%")
 ```
 
-```{r kmst4, fig.cap="Kaplan-Meier CVD/First HFH - Supremum dose 100%", cache=cacheon, dependson="kmfunc"}
+```{r kmst4, fig.cap="Kaplan-Meier CVD/First HFH - Supremum treatment dose 100%", cache=cacheon, dependson="kmfunc"}
 kmfunc(subsetmy = pdata$supremumdose_cat == "100%")
 ```
 
-```{r kmras1, fig.cap="Kaplan-Meier CVD/First HFH - Ras dose 0%", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_rasdosemax_cat == "0")
+```{r kmras1, fig.cap="Kaplan-Meier CVD/First HFH - No ras", cache=cacheon, dependson="kmfunc"}
+kmfunc(subsetmy = pdata$shf_rasdosemax_cat == "No")
 ```
 
 ```{r kmras2, fig.cap="Kaplan-Meier CVD/First HFH - Ras dose <50%", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_rasdosemax_cat == "0.5")
+kmfunc(subsetmy = pdata$shf_rasdosemax_cat == "<50%")
 ```
 
 ```{r kmras3, fig.cap="Kaplan-Meier CVD/First HFH - Ras dose >=50%", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_rasdosemax_cat == "1")
+kmfunc(subsetmy = pdata$shf_rasdosemax_cat == ">=50%")
 ```
 
-```{r kmbbl1, fig.cap="Kaplan-Meier CVD/First HFH - Bbl dose 0%", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_bbldosemax_cat == "0")
+```{r kmbbl1, fig.cap="Kaplan-Meier CVD/First HFH - No Bbl", cache=cacheon, dependson="kmfunc"}
+kmfunc(subsetmy = pdata$shf_bbldosemax_cat == "No")
 ```
 
 ```{r kmbbl2, fig.cap="Kaplan-Meier CVD/First HFH - Bbl dose <50%", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_bbldosemax_cat == "0.5")
+kmfunc(subsetmy = pdata$shf_bbldosemax_cat == "<50%")
 ```
 
 ```{r kmbbl3, fig.cap="Kaplan-Meier CVD/First HFH - Bbl dose >=50%", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_bbldosemax_cat == "1")
+kmfunc(subsetmy = pdata$shf_bbldosemax_cat == ">=50%")
 ```
 
-```{r kmmra1, fig.cap="Kaplan-Meier CVD/First HFH - No MRA (0%)", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_mradosemax_cat == "0")
+```{r kmmra1, fig.cap="Kaplan-Meier CVD/First HFH - No MRA", cache=cacheon, dependson="kmfunc"}
+kmfunc(subsetmy = pdata$shf_mradosemax_cat == "No")
 ```
 
-```{r kmmra2, fig.cap="Kaplan-Meier CVD/First HFH - MRA (100%)", cache=cacheon, dependson="kmfunc"}
-kmfunc(subsetmy = pdata$shf_mradosemax_cat == "1")
+```{r kmmra2, fig.cap="Kaplan-Meier CVD/First HFH - MRA", cache=cacheon, dependson="kmfunc"}
+kmfunc(subsetmy = pdata$shf_mradosemax_cat == "Yes")
 ```

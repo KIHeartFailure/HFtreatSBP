@@ -41,16 +41,15 @@ flowtabFunc("Not recieving both arb and acei")
 
 pdata <- pdata %>%
   mutate(koll = ifelse(shf_bbl == "Yes" & shf_bblsub %in%
-                         c("Bisoprolol", "Carvedilol", "Metoprolol") | shf_bbl == "No",
-                       "Yes", "No"
+    c("Bisoprolol", "Carvedilol", "Metoprolol") | shf_bbl == "No",
+  "Yes", "No"
   ))
-flowtabFunc("Not recieving other bbl than Bisoprolol, Carvedilol, Metoprolol, Nebivolol")
+flowtabFunc("Not recieving other bbl than Bisoprolol, Carvedilol, Metoprolol")
 
 pdata <- pdata %>%
   group_by(LopNr) %>%
   arrange(shf_indexdtm) %>%
   slice(c(n() - 1, n()))
-#slice(c(1, 2))
 
 pdata2 <- pdata %>%
   slice(n() - 1) %>%
@@ -60,10 +59,11 @@ pdata <- pdata %>%
   slice(n()) %>%
   ungroup()
 
-pdata <- left_join(pdata,
-                   pdata2 %>% select(LopNr, shf_bpsys, contains("supremum"), shf_indexdtm, sos_out_hosphf, sos_outtime_hosphf),
-                   by = "LopNr",
-                   suffix = c("", "_pre")
+pdata <- left_join(
+  pdata,
+  pdata2 %>% select(LopNr, shf_bpsys, contains("supremum"), shf_indexdtm, sos_out_hosphf, sos_outtime_hosphf),
+  by = "LopNr",
+  suffix = c("", "_pre")
 )
 
 flow <- rbind(flow, c("Last registration / patient", nrow(pdata), NA))
@@ -79,7 +79,7 @@ pdata_sens <- pdata %>%
 flow <- rbind(
   flow,
   c(
-    "Whereof indexyear >= 2014 and non-missing dose if recieving mra (consitency analysis)",
+    "Whereof indexyear >= 2014 and non-missing dose if recieving mra (consistency analysis)",
     nrow(pdata_sens), NA
   )
 )

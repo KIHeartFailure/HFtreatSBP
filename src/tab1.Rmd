@@ -59,7 +59,8 @@ footnote(
   ) %>%
     landscape(),
   general = c(
-    "Categorical variables are presented with n (%) and tested with chi-square test and continous variables with median [q1-q3] and tested with Kruskal-Wallis Rank Sum test."
+    "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis Rank Sum test.",
+    "Variables with prefix shf_ are from the SwedeHF, sos_ from NPR, shf_sos_ combinded information from SwedeHF and NPR."
   ),
   symbol = c(
     "arb/acei",

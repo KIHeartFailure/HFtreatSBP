@@ -1,8 +1,12 @@
 ```{r tabtreat}
 
 treatvars <- c(
-  "shf_aceisub", "shf_arbsub", "shf_bblsub",
-  "shf_rasdosemax", "shf_bbldosemax", "shf_mradosemax",
+  "shf_aceisub", "shf_arbsub", 
+  "shf_rasdosemax", "shf_rasdosemax_cat",
+  "shf_bblsub",
+  "shf_bbldosemax", "shf_bbldosemax_cat", 
+  "shf_mradosemax_cat",
+  "shf_mradosemax_sens", "shf_mradosemax_cat_sens",
   "supremumdose_sens_cat"
 )
 
@@ -52,13 +56,13 @@ tabout <- tabout %>%
     Variables = sanitizeTextFunc(Variables)
   )
 
-## add footnote about ras (arb, acei)
-
-tabout$Variables <- ifelse(stri_extract_first_words(tabout$Variablesforfoot) == "shf_mradosemax",
+tabout$Variables <- ifelse(stri_extract_first_words(tabout$Variablesforfoot) %in% c
+                           ("shf_mradosemax_sens", "shf_mradosemax_cat_sens"),
   paste0(tabout$Variables, footnote_marker_symbol(1)), tabout$Variables
 )
 
-tabout$Variables <- ifelse(stri_extract_first_words(tabout$Variablesforfoot) == "supremumdose_sens_cat",
+tabout$Variables <- ifelse(stri_extract_first_words(tabout$Variablesforfoot) %in% 
+                             c("supremumdose_sens_cat", "shf_mradosemax_sens", "shf_mradosemax_cat_sens"),
   paste0(tabout$Variables, footnote_marker_symbol(2)), tabout$Variables
 )
 
@@ -81,7 +85,7 @@ footnote(
   ),
   symbol = c(
     "MRA dose is only available from 2014 and is therefore not included in the calculation of the supremumdose variable.",
-    "Includes MRA dose (data only from 2014)."
+    "Data only from 2014."
   )
 )
 ```

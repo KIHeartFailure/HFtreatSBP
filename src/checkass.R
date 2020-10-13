@@ -1,14 +1,17 @@
 
 ProjectTemplate::reload.project()
 
-dataass <- mice::complete(imp, 6)
+dataass <- mice::complete(impdata, 4)
 
 
 # Cox regression ----------------------------------------------------------
 
+modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "shf_bbl", "shf_mra")]
+
 mod <- coxph(formula(paste0(
-  "Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == 'Yes') ~ ddr_sglt2 +",
-  paste(modvars, collapse = " + "))), data = dataass)
+  "Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == 'Yes') ~ supremumdose + shf_bpsys +",
+  paste(modvarstmp, collapse = " + ")
+)), data = dataass)
 
 
 # Checking for non-prop hazards -------------------------------------------
@@ -16,62 +19,29 @@ mod <- coxph(formula(paste0(
 print(testpat <- cox.zph(mod))
 (sig <- testpat$table[testpat$table[, 3] < 0.05, ])
 
-# check spec for sglt2, ok
-survminer::ggcoxzph(testpat[1]) 
+# check spec for supremumdose
+survminer::ggcoxzph(testpat[1])
 plot(testpat[1])
 
-# check for vars with most sig in most imps
+# check spec for sysbp
+survminer::ggcoxzph(testpat[2])
+plot(testpat[2])
+
+# check spec for age
 survminer::ggcoxzph(testpat[4])
 plot(testpat[4])
-plot(testpat[13])
-plot(testpat[14])
 
-# Checking for outliers ---------------------------------------------------
-
-survminer::ggcoxdiagnostics(mod,
-  type = "dfbeta",
-  linear.predictions = FALSE, ggtheme = theme_bw()
-)
-
+# check spec for location
+survminer::ggcoxzph(testpat[9])
+plot(testpat[9])
 
 # Checking for linearity ---------------------------------------------------
 
-#ggcoxfunctional(Surv(time_out_hf_hosp, out_death_hfhosp == "yes") ~ age + bp.sys + heartRate, data = dataass)
-# No continous variables
-
-# Logistic regression -----------------------------------------------------
-modlm <- glm(formula(paste0("ddr_sglt2 == 'Yes' ~ ", paste(modvars, collapse = " + "))),
-  family = binomial(link = "logit"), data = dataass
+ggcoxfunctional(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ shf_age +
+  shf_bpsys +
+  shf_heartrate +
+  shf_potassium +
+  shf_gfrckdepi +
+  shf_ntpropbnp,
+data = dataass
 )
-
-
-# Linearity for continous variables ---------------------------------------
-
-# No continous variables
-
-#probabilities <- predict(modlm, type = "response")
-#predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
-
-#contdata <- dataass %>%
-#  select(age, bp.sys, heartRate)
-
-# Bind the logit and tidying the data for plot
-#contdata <- contdata %>%
-#  mutate(logit = log(probabilities / (1 - probabilities))) %>%
-#  gather(key = "predictors", value = "predictor.value", -logit)
-
-#ggplot(contdata, aes(logit, predictor.value)) +
-#  geom_point(size = 0.5, alpha = 0.5) +
-#  geom_smooth(method = "loess") +
-#  theme_bw() +
-#  facet_wrap(~predictors, scales = "free_y")
-
-
-# Outliers ---------------------------------------------------------------
-
-plot(modlm, which = 4, id.n = 3)
-
-
-# Multicollinearity -------------------------------------------------------
-
-car::vif(modlm)

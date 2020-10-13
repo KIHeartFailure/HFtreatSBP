@@ -200,7 +200,7 @@ pdata <- pdata %>%
     ),
 
     # Anemia
-    shf_hb_cat = case_when(
+    shf_anemia = case_when(
       is.na(shf_hb) ~ NA_character_,
       shf_sex == "Female" & shf_hb < 120 | shf_sex == "Male" & shf_hb < 130 ~ "Yes",
       TRUE ~ "No"

@@ -22,12 +22,6 @@ tabevent_all <- print(tabevent_tmp_all,
   explain = FALSE
 )
 
-# remove space between ( %
-tabevent_all <- tabevent_all %>%
-  as.data.frame() %>%
-  mutate(across(everything(), str_replace_all, fixed("( "), "("))
-
-
 footnote(
   mykable(tabevent_all,
     caption = "N events",

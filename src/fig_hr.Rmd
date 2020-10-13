@@ -1,15 +1,15 @@
 ```{r forestuni, fig.cap="Crude Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
 
-modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
+modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
 
 # crude
 moduni <- coxph(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ sysbp_suptreat, data = pdata)
 modunis <- summary(moduni)
 
-#labs <- levels(pdata$sysbp_suptreat)
+# labs <- levels(pdata$sysbp_suptreat)
 labs1 <- rep(c("SBP >=140 mmHg", "SBP 120-139 mmHg", "SBP 100-119 mmHg", "SBP 90-99 mmHg", "SBP <90 mmHg"), each = 4)
 labs2 <- rep(c("ST 100%", "ST 51-99%", "ST 50%", "ST<50%"), 5)
-  
+
 loghr <- c(0, modunis$coefficients[, 1])
 loglci <- c(0, log(modunis$conf.int[, 3]))
 loguci <- c(0, log(modunis$conf.int[, 4]))
@@ -21,11 +21,13 @@ hrci <- paste0(
 hrci[1] <- "ref"
 
 outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci))
-outforest <- rbind(outforest[1:4, ], rep(NA, 6), 
-                   outforest[5:8, ], rep(NA, 6), 
-                   outforest[9:12, ], rep(NA, 6), 
-                   outforest[13:16, ], rep(NA, 6), 
-                   outforest[17:20, ])
+outforest <- rbind(
+  outforest[1:4, ], rep(NA, 6),
+  outforest[5:8, ], rep(NA, 6),
+  outforest[9:12, ], rep(NA, 6),
+  outforest[13:16, ], rep(NA, 6),
+  outforest[17:20, ]
+)
 outforest <- outforest %>% arrange(desc(row_number()))
 
 nf <- nrow(outforest)
@@ -55,8 +57,9 @@ plot(outforest$loghr, 1:nf,
 )
 
 for (i in 1:nf) {
-  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i), 
-      col = global_kicols[1], cex = 2)
+  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i),
+    col = global_kicols[1], cex = 2
+  )
 }
 
 matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
@@ -93,7 +96,7 @@ axis(2,
 
 ```{r forestadj, fig.cap="Adjusted Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
 
-modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
+modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
 
 # adjusted
 modm <- with(impdata, coxph(formula(paste0(
@@ -121,11 +124,13 @@ hrci[1] <- "ref"
 
 
 outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci))
-outforest <- rbind(outforest[1:4, ], rep(NA, 6), 
-                   outforest[5:8, ], rep(NA, 6), 
-                   outforest[9:12, ], rep(NA, 6), 
-                   outforest[13:16, ], rep(NA, 6), 
-                   outforest[17:20, ])
+outforest <- rbind(
+  outforest[1:4, ], rep(NA, 6),
+  outforest[5:8, ], rep(NA, 6),
+  outforest[9:12, ], rep(NA, 6),
+  outforest[13:16, ], rep(NA, 6),
+  outforest[17:20, ]
+)
 outforest <- outforest %>% arrange(desc(row_number()))
 
 nf <- nrow(outforest)
@@ -156,8 +161,9 @@ plot(outforest$loghr, 1:nf,
 )
 
 for (i in 1:nf) {
-  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i), 
-      col = global_kicols[1], cex = 2)
+  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i),
+    col = global_kicols[1], cex = 2
+  )
 }
 
 matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)

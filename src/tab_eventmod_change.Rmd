@@ -4,7 +4,7 @@ survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
 
   colnames(out) <- c("Model", "Subgroup", eventname)
 
-  modvarstmp <- modvars[!modvars %in% c("shf_bpsys", "shf_ras", "shf_bbl", "shf_mra")]
+  modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "shf_bbl", "shf_mra")]
 
   out[1, 1] <- "Crude"
   out[4, 1] <- "Adjusted"

@@ -1,6 +1,5 @@
 ---
 title: 'Statistical report: Interaction between HF treatment dosage and blood pressure for clinical outcome'
-subtitle: 'DRAFT'
 author: 'Statistician: Lina Benson'
   
 date: "`r Sys.Date()`"
@@ -13,8 +12,6 @@ output:
 link-citations: yes
 bibliography: references.bib
 nocite: '@*'
-header-includes:
-   - \usepackage{draftwatermark}
 ---
 
 \newpage 
@@ -79,16 +76,27 @@ Median age (IQR):
 mykable(metaout, caption = "Additional outcomes from NPR/Cause of Death Registry")
 ```
 
-The supremum treatment variable is created as follows:
+### The supremum treatment variable
+
+A supremum treatment variable is created as follows:
+
+- 0 points for non-prescription, 
+
+- 0.5 points for use of <50% of target dose (<100% of target dose for MRA),
+
+- 1 point for use of >=50% of target dose (>=100% target dose for MRA).”
+
+1 variable is derived for ACEi/ARBs (being the highest value of the 2 variables), 
+1 for bbl and 1 for MRA. 
+The supremum treatment variable is the mean of the 3 (rasi, bbl, mra) variables.
+
+Since MRA dose was not collected in SwedeHF prior to 2014 mra use is given 1 point 
+and no mra is given 0 points and a consistency analysis is performed for the primary endpoint with only 
+observations from 2014 with mra dose included in the supremum treatment variable as above. 
 
 ```{r codesuptret, code = readLines("../munge/02-suptreatvar.R"), echo = TRUE, eval = FALSE}
 
 ```
-
-Note that mra is assumed to give 1 point if receiving mra at all since mra dose was 
-not collected in the registry until 2014. 
-
-Throughout the doses presented are % of target dose.
 
 # Statistical analysis 
 
@@ -120,8 +128,8 @@ as the Nelson-Aalen estimator.
 
 The functional form of systolic blood pressure modelled with a natural cubic spline 
 with knots placed at the quintiles of sbp in a cox regression is plotted. 
-Partly for the primary outcome, cvd/1 hf hosp, and partly for cvd as outcome. 
-The curve is centered at the median sys bp. 
+Partly for the primary outcome, CVD/First HFH, and partly for CVD as outcome. 
+The curve is centred at the median sys bp. 
 
 ```{r, child = "../src/spline_ass_out_sbp.Rmd"}
 
@@ -137,7 +145,10 @@ mra.
 
 Crude and adjusted cox proportional hazards regressions were used to evaluate the association 
 between the supremum dose variable/systolic blood pressure and the respective outcomes. 
-Adjustment is performed for the variables indicated in Table \ref{tab:tab1}.
+Adjustment is performed for the variables indicated in Table \ref{tab:tab1}. 
+Continuous variables `r paste0(kontvars, collapse = ", ")` are modelled using cubic splines with 3 df and 
+`r paste0(stratavars, collapse = ", ")` 
+are included as a strata variable in the model due to non-proportional hazards. 
 
 In order to present the supremum dose variable and systolic blood pressure 
 in subgroups they are modelled with an interaction term. 
@@ -147,20 +158,14 @@ systolic blood pressure subgroups (so the HR are from separate models, with the
 categorical and continuous SBP and treat interchanging).  
 
 In the models with the supremum treatment variable ras, bbl and mra are not 
-included as separate variables in the models. For the individual medications 
-0 = no medication, 0.5 = <50% of target dose, 1 = >= 50% of target dose. 
-For MRA 0 = no medication, 1 = medication since MRA dose was not 
-collected in SwedeHF prior to 2014. A consistency analysis was therefore 
+included as separate variables in the models. Since MRA dose was not 
+collected in SwedeHF prior to 2014 a consistency analysis was therefore 
 performed for the primary endpoint with only 
 observations from 2014 with mra dose included in the supremum treatment variable. 
 
 Data were censored at 2018-12-31 or death/emigration, 
 so this assumes that the risk of hf hospitalization 
 would have been the same for a censored patient had the censoring not occurred. 
-
-### Assumptions
-
-To be checked...
 
 ```{r, child = "../src/tab_event.Rmd"}
 
@@ -192,7 +197,7 @@ To be checked...
 
 Forest plot presenting the HR and 95% CI from a cox model with the variable  
 systolic bp * sumpremum treatment. Both are categorical (in the table one is 
-continuous). The group with high bp and high treatment is the reference. 
+continuous).  
 
 ```{r, child = "../src/fig_hr.Rmd"}
 
@@ -219,11 +224,6 @@ visit with 10 mmHg or more and a stable and decrease in the supremum treatment v
 
 The baseline variables presented in the table and adjusted for in the models 
 are from the LAST visit. 
-
-```{r}
-pdata_change <- pdata %>%
-  filter(!is.na(treatsbp_diff))
-```
 
 ```{r, child = "../src/histogram_change.Rmd"}
 

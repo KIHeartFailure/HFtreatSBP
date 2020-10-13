@@ -6,7 +6,7 @@ noimpvars <- names(pdata)[!names(pdata) %in% modvars]
 
 # Nelson-Aalen estimator
 na <- basehaz(coxph(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ 1,
-                    data = pdata, method = "breslow"
+  data = pdata, method = "breslow"
 ))
 pdata <- left_join(pdata, na, by = c("sos_outtime_hosphf" = "time"))
 
@@ -16,9 +16,9 @@ pred <- ini$pred
 pred[, noimpvars] <- 0
 pred[noimpvars, ] <- 0 # redundant
 
-# change mthod used in impuation to prop odds model
+# change mthod used in imputation to prop odds model
 meth <- ini$method
-meth[c("scb_education")] <- "polr"
+meth[c("scb_education", "shf_nyha", "shf_indexyear_cat")] <- "polr"
 meth[noimpvars] <- ""
 
 ## check no cores
@@ -45,9 +45,9 @@ impdata <-
     .packages = "mice"
   ) %dopar% {
     mice(pdata,
-         m = m_2_use, maxit = 10, method = meth,
-         predictorMatrix = pred,
-         printFlag = FALSE
+      m = m_2_use, maxit = 10, method = meth,
+      predictorMatrix = pred,
+      printFlag = FALSE
     )
   }
 stopImplicitCluster()
