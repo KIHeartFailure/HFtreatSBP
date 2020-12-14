@@ -263,9 +263,15 @@ noncvhosp <- survmy(
   novar = c("shf_ras", "shf_bbl", "shf_mra")
 )
 
+syncope <- survmy(
+  time = "sos_outtime_hospsyncope", event = "sos_out_hospsyncope",
+  eventname = "First Syncope hospitalization",
+  novar = c("shf_ras", "shf_bbl", "shf_mra")
+)
+
 survout <- bind_rows(
   cvmorthfhosp, cvmorthfhosp_sens, mort, cvmort,
-  hfmort, hfhosp, cvhosp, noncvhosp
+  hfmort, hfhosp, cvhosp, noncvhosp, syncope
 )
 
 footnote(mykable(survout,
@@ -298,7 +304,14 @@ cvmort_ras <- survmy(
   novar = "shf_ras"
 )
 
-survout_ras <- bind_rows(cvmorthfhosp_ras, cvmort_ras)
+syncope_ras <- survmy(
+  time = "sos_outtime_hospsyncope", event = "sos_out_hospsyncope",
+  eventname = "First Syncope hospitalization",
+  dosevarkont = "shf_rasdosemax", dosevarkat = "shf_rasdosemax_cat",
+  novar = "shf_ras"
+)
+
+survout_ras <- bind_rows(cvmorthfhosp_ras, cvmort_ras, syncope_ras)
 
 footnote(mykable(survout_ras,
   caption = "Interaction between SBP and ras in Cox analysis."
@@ -325,7 +338,14 @@ cvmort_bbl <- survmy(
   novar = "shf_bbl"
 )
 
-survout_bbl <- bind_rows(cvmorthfhosp_bbl, cvmort_bbl)
+syncope_bbl <- survmy(
+  time = "sos_outtime_hospsyncope", event = "sos_out_hospsyncope",
+  eventname = "First Syncope hospitalization",
+  dosevarkont = "shf_bbldosemax", dosevarkat = "shf_bbldosemax_cat",
+  novar = "shf_bbl"
+)
+
+survout_bbl <- bind_rows(cvmorthfhosp_bbl, cvmort_bbl, syncope_bbl)
 
 footnote(mykable(survout_bbl,
   caption = "Interaction between SBP and Bbl in Cox analysis."
@@ -352,7 +372,14 @@ cvmort_mra <- survmy(
   novar = "shf_mra"
 )
 
-survout_mra <- bind_rows(cvmorthfhosp_mra, cvmort_mra)
+syncope_mra <- survmy(
+  time = "sos_outtime_hospsyncope", event = "sos_out_hospsyncope",
+  eventname = "First Syncope hospitalization",
+  dosevarkont = "shf_mradosemax", dosevarkat = "shf_mradosemax_cat",
+  novar = "shf_mra"
+)
+
+survout_mra <- bind_rows(cvmorthfhosp_mra, cvmort_mra, syncope_mra)
 
 footnote(mykable(survout_mra,
   caption = "Interaction between SBP and mra (note no info on doses) in Cox analysis."

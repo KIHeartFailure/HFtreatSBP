@@ -10,7 +10,8 @@ tabevent_tmp_all <- CreateTableOne(
     "sos_out_hospcv",
     "sos_out_hospnoncv",
     "sos_out_deathhospstroke",
-    "sos_out_deathhospacs"
+    "sos_out_deathhospacs", 
+    "sos_out_hospsyncope"
   ),
   data = pdata
 )
