@@ -225,7 +225,21 @@ than 10 mmHg.
 visit with 10 mmHg or more and an increase in the supremum treatment variable.
 
 - Decrease SBP + stable treat = Decrease in SBP between second last and last 
-visit with 10 mmHg or more and a stable and decrease in the supremum treatment variable.
+visit with 10 mmHg or more and a stable or decrease in the supremum treatment variable.
+
+Another change variable (names 4 groups below) was created defined as: 
+
+- Stable group = Decrease in SBP between second last and last visit with less 
+than 10 mmHg.
+
+- Decrease SBP + increase treat = Decrease in SBP between second last and last 
+visit with 10 mmHg or more and an increase in the supremum treatment variable.
+
+- Decrease SBP + stable treat = Decrease in SBP between second last and last 
+visit with 10 mmHg or more and a stable supremum treatment variable.
+
+- Decrease SBP + stable treat = Decrease in SBP between second last and last 
+visit with 10 mmHg or more and decrease in the supremum treatment variable.
 
 The baseline variables presented in the table and adjusted for in the models 
 are from the LAST visit. 
@@ -234,11 +248,27 @@ are from the LAST visit.
 
 ```
 
+\clearpage
+\newpage
+
+### 3 groups 
 ```{r, child = "../src/tab1_change.Rmd"}
 
 ```
 
 ```{r, child = "../src/tab_eventmod_change.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
+### 4 groups
+```{r, child = "../src/tab1_change4groups.Rmd"}
+
+```
+
+```{r, child = "../src/tab_eventmod_change4groups.Rmd"}
 
 ```
 

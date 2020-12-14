@@ -1,0 +1,87 @@
+```{r tab1change4, cache=cacheon}
+
+tab1_tmp <- CreateTableOne(
+  vars = tabvars,
+  strata = "treatsbp_diff4",
+  data = pdata %>% filter(changepop1)
+)
+
+tab1 <- print(tab1_tmp,
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars, test = TRUE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+tab1out <- cbind(tab1[, 7], tab1[, 1:5])
+
+tab1out <- data.frame(rownames(tab1out), tab1out)
+colnames(tab1out) <- c("Variables", "Missing (%)", "Stable", "Decrease SBP/Increase treat", "Decrease SBP/Stable treat", "Descrease SBP/Decrease treat", "p-value")
+
+## white space removed in kable function.
+tab1out <- tab1out %>%
+  mutate(
+    Variables = sub("^ ", ". ", Variables)
+  )
+
+# remove space between ( %
+tab1out <- tab1out %>%
+  mutate(across(everything(), str_replace_all, fixed("( "), "("))
+
+write.xlsx(tab1out, paste0("./output/tabs/tab1_change4groups_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+
+footnote(
+  mykable(tab1out,
+    fontsize = 6,
+    caption = "Baseline characteristics by change in SBP and treatment (4 groups)",
+    longtable = TRUE
+  ) %>%
+    landscape(),
+  general = c(
+    "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis Rank Sum test."
+  )
+)
+```
+
+```{r tab1changeexclhosp4}
+
+tab1_tmp <- CreateTableOne(
+  vars = tabvars,
+  strata = "treatsbp_diff4",
+  data = pdata %>% filter(changepop2)
+)
+
+tab1 <- print(tab1_tmp,
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars, test = TRUE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE
+)
+
+tab1out <- cbind(tab1[, 7], tab1[, 1:5])
+
+tab1out <- data.frame(rownames(tab1out), tab1out)
+colnames(tab1out) <- c("Variables", "Missing (%)", "Stable", "Decrease SBP/Increase treat", "Decrease SBP/Stable treat", "Descrease SBP/Decrease treat", "p-value")
+
+## white space removed in kable function.
+tab1out <- tab1out %>%
+  mutate(
+    Variables = sub("^ ", ". ", Variables)
+  )
+
+# remove space between ( %
+tab1out <- tab1out %>%
+  mutate(across(everything(), str_replace_all, fixed("( "), "("))
+
+write.xlsx(tab1out, paste0("./output/tabs/tab1_change4groups_excluding_hfhosp_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+
+footnote(
+  mykable(tab1out,
+    fontsize = 6,
+    caption = "Baseline characteristics by change in SBP and treatment (4 groups) (excluding patients with HF hosp between visits)",
+    longtable = TRUE
+  ) %>%
+    landscape(),
+  general = c(
+    "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis Rank Sum test."
+  )
+)
+```

@@ -1,0 +1,119 @@
+```{r tab_eventmodchange4, cache=cacheon}
+survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
+  out <- data.frame(matrix(NA, ncol = 3, nrow = 8))
+
+  colnames(out) <- c("Model", "Subgroup", eventname)
+
+  modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "shf_bbl", "shf_mra")]
+
+  out[1, 1] <- "Crude"
+  out[5, 1] <- "Adjusted"
+
+  out[1:4, 2] <- levels(pdata$treatsbp_diff4)
+  out[5:8, 2] <- out[1:4, 2]
+
+  # crude
+  mod <- coxph(formula(paste0(
+    "Surv(", time, ", ", event, "== 'Yes') ~ treatsbp_diff4"
+  )),
+  data = pdata %>% filter(!!enquo(myfiltcrude))
+  )
+  mods <- summary(mod)
+
+  # hr + ci
+  out[1:4, 3] <- c("ref", paste0(
+    dF(mods$conf.int[1:3, 1], dig = 2),
+    " (", dF(mods$conf.int[1:3, 3], dig = 2),
+    "-", dF(mods$conf.int[1:3, 4], dig = 2), "), ",
+    dF(mods$coef[1:3, 5], 3, p = TRUE)
+  ))
+
+  # adjusted
+  mod <- my.coxph.mids(formula(paste0(
+    "Surv(", time, ", ", event, "== 'Yes') ~ treatsbp_diff4 + ", paste(modvarstmp, collapse = " + ")
+  )),
+  data = impdata,
+  subset = myfiltadj
+  )
+
+  # df the number of events minus the regression coefficients.
+  # There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+  mods <- summary(pool(mod,
+    dfcom = (mod$analyses[[1]]$nevent - length(mod$analyses[[1]]$coefficients))
+  ))
+
+  # hr + ci
+  out[5:8, 3] <- c("ref", paste0(
+    dF(exp(mods$estimate[1:3]), dig = 2),
+    " (", dF(exp(mods$estimate[1:3] - global_z05 * mods$std.error[1:3]), dig = 2),
+    "-", dF(exp(mods$estimate[1:3] + global_z05 * mods$std.error[1:3]), dig = 2), ")",
+    ", ", dF(mods$p.value[1:3], 3, p = TRUE)
+  ))
+  return(out)
+}
+```
+
+```{r tab_eventmodchangeall4, cache=cacheon, dependson="tab_eventmodchange4"}
+cvmorthfhosp <- survmychange(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH",
+  myfiltcrude = changepop1,
+  myfiltadj = quote(changepop1)
+)
+
+cvmort <- survmychange(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD",
+  myfiltcrude = changepop1,
+  myfiltadj = quote(changepop1)
+)
+
+survout <- bind_cols(cvmorthfhosp, cvmort[, 3])
+names(survout) <- c(
+  names(cvmorthfhosp),
+  names(cvmort)[3]
+)
+
+myHeader <- c(" " = 1, " " = 1, "HR (95% CI), p-value" = 2)
+names(myHeader) <- c(" ", " ", "HR (95% CI), p-value")
+
+mykable(survout,
+  caption = "Asscociation between change variable (4 groups) and outcome in Cox analysis"
+) %>%
+  add_header_above(myHeader)
+
+write.xlsx(survout, paste0("./output/tabs/eventtab_change4groups_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```
+
+```{r tab_eventmodchangeexclhosp4, cache=cacheon, dependson="tab_eventmodchange4"}
+cvmorthfhosp <- survmychange(
+  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
+  eventname = "CVD/First HFH",
+  myfiltcrude = changepop2,
+  myfiltadj = quote(changepop2)
+)
+
+cvmort <- survmychange(
+  time = "sos_outtime_death", event = "sos_out_deathcv",
+  eventname = "CVD",
+  myfiltcrude = changepop2,
+  myfiltadj = quote(changepop2)
+)
+
+survout <- bind_cols(cvmorthfhosp, cvmort[, 3])
+names(survout) <- c(
+  names(cvmorthfhosp),
+  names(cvmort)[3]
+)
+
+
+myHeader <- c(" " = 1, " " = 1, "HR (95% CI), p-value" = 2)
+names(myHeader) <- c(" ", " ", "HR (95% CI), p-value")
+
+mykable(survout,
+  caption = "Asscociation between change variable (4 groups) and outcome in Cox analysis (excluding patients with HF hosp between visits)"
+) %>%
+  add_header_above(myHeader)
+
+write.xlsx(survout, paste0("./output/tabs/eventtab_change4groups_excluding_hfhosp_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+```
