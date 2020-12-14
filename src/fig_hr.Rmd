@@ -1,199 +1,183 @@
-```{r forestuni, fig.cap="Crude Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
+```{r foresthr, cache=cacheon}
 
-modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
+foresthr <- function(treatvar, treatlab, novar, treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE) {
+  modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", novar)]
 
-# crude
-moduni <- coxph(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ sysbp_suptreat, data = pdata)
-modunis <- summary(moduni)
+  if (!adj) {
+    # crude
+    moduni <- coxph(formula(paste0("Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == 'Yes') ~ ", treatvar)), data = pdata)
+    modunis <- summary(moduni)
+    loghr <- c(0, modunis$coefficients[, 1])
+    loglci <- c(0, log(modunis$conf.int[, 3]))
+    loguci <- c(0, log(modunis$conf.int[, 4]))
+  }
+  if (adj) {
+    # adjusted
+    modm <- with(impdata, coxph(formula(paste0(
+      "Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == 'Yes') ~ ", treatvar, " + ", paste(modvarstmp, collapse = " + ")
+    ))))
 
-# labs <- levels(pdata$sysbp_suptreat)
-labs1 <- rep(c("SBP >=140 mmHg", "SBP 120-139 mmHg", "SBP 100-119 mmHg", "SBP 90-99 mmHg", "SBP <90 mmHg"), each = 4)
-labs2 <- rep(c("ST 100%", "ST 51-99%", "ST 50%", "ST<50%"), 5)
+    # df the number of events minus the regression coefficients.
+    # There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+    modms <- summary(pool(modm,
+      dfcom = (modm$analyses[[1]]$nevent - length(modm$analyses[[1]]$coefficients))
+    ))
 
-loghr <- c(0, modunis$coefficients[, 1])
-loglci <- c(0, log(modunis$conf.int[, 3]))
-loguci <- c(0, log(modunis$conf.int[, 4]))
-hrci <- paste0(
-  dF(exp(loghr), 1), " (",
-  dF(exp(loglci), 1), "-",
-  dF(exp(loguci), 1), ")"
-)
-hrci[1] <- "ref"
+    nc <- length(levels(pdata %>% pull(!!sym(treatvar)))) - 1
+    loghr <- c(0, modms$estimate[1:nc])
+    loglci <- c(0, modms$estimate[1:nc] - global_z05 * modms$std.error[1:nc])
+    loguci <- c(0, modms$estimate[1:nc] + global_z05 * modms$std.error[1:nc])
+  }
 
-outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci))
-outforest <- rbind(
-  outforest[1:4, ], rep(NA, 6),
-  outforest[5:8, ], rep(NA, 6),
-  outforest[9:12, ], rep(NA, 6),
-  outforest[13:16, ], rep(NA, 6),
-  outforest[17:20, ]
-)
-outforest <- outforest %>% arrange(desc(row_number()))
+  # %
+  percent <- pdata %>%
+    count(!!sym(treatvar)) %>%
+    mutate(per = paste0(dF(n / sum(n) * 100, 1), "%")) %>%
+    pull(per)
 
-nf <- nrow(outforest)
-# exp(min(loglci, na.rm = T))
-# exp(max(loguci, na.rm = T))
+  labs1 <- rep(c(">=140 mmHg", "120-139 mmHg", "100-119 mmHg", "90-99 mmHg", "<90 mmHg"), each = length(treatlabs))
+  labs2 <- rep(treatlabs, 5)
 
-# c(bottom, left, top, right)
-par(mar = c(2, 17, 1, 2) + 0.2)
+  hrci <- paste0(
+    dF(exp(loghr), 1), " (",
+    dF(exp(loglci), 1), "-",
+    dF(exp(loguci), 1), ")"
+  )
+  hrci[1] <- "ref"
 
-cextext <- 0.9
+  outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci, percent))
 
-plot(outforest$loghr, 1:nf,
-  cex = 1.2,
-  xlim = c(
-    log(.9),
-    log(5.5)
-  ),
-  xlab = NA,
-  ylim = c(1, nf + .4),
-  axes = FALSE,
-  ylab = NA,
-  main = NA,
-  type = "p",
-  pch = 22,
-  bg = global_kicols[1],
-  col = global_kicols[1]
-)
+  if (length(treatlabs) == 3) {
+    outforest <- rbind(
+      outforest[1:3, ], rep(NA, 6),
+      outforest[4:6, ], rep(NA, 6),
+      outforest[7:9, ], rep(NA, 6),
+      outforest[10:12, ], rep(NA, 6),
+      outforest[13:15, ]
+    )
+  }
+  if (length(treatlabs) == 2) {
+    outforest <- rbind(
+      outforest[1:2, ], rep(NA, 6),
+      outforest[3:4, ], rep(NA, 6),
+      outforest[5:6, ], rep(NA, 6),
+      outforest[7:8, ], rep(NA, 6),
+      outforest[9:10, ]
+    )
+  }
+  outforest <- outforest %>% arrange(desc(row_number()))
 
-for (i in 1:nf) {
-  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i),
-    col = global_kicols[1], cex = 2
+  nf <- nrow(outforest)
+  # exp(min(loglci, na.rm = T))
+  # exp(max(loguci, na.rm = T))
+
+  # c(bottom, left, top, right)
+  par(mar = c(2, 20, 1, 2) + 0.2)
+
+  cextext <- 0.9
+
+  if (!adj) {
+    minx <- 0.9
+    maxx <- 8
+  }
+  if (adj) {
+    minx <- 0.9
+    maxx <- 5
+  }
+
+  plot(outforest$loghr, 1:nf,
+    cex = 1.2,
+    xlim = c(
+      log(minx),
+      log(maxx)
+    ),
+    xlab = NA,
+    ylim = c(1, nf + .6),
+    axes = FALSE,
+    ylab = NA,
+    main = NA,
+    type = "p",
+    pch = 22,
+    bg = global_kicols[1],
+    col = global_kicols[1]
+  )
+
+  for (i in 1:nf) {
+    lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i),
+      col = global_kicols[1], cex = 2
+    )
+  }
+
+  matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+  atmy <- c(seq(0.5, maxx, 0.5))
+  atmy2 <- atmy
+  atmy2[!atmy %in% c(1, 2, 3, 4, 5, 6, 7, 8)] <- NA
+  axis(1,
+    cex.axis = cextext, at = log(atmy),
+    labels = atmy2
+  )
+  if (adj) {
+    axis(1,
+      cex.axis = cextext, at = log(c(1)),
+      labels = c(1)
+    )
+  }
+  if (!adj) {
+    axis(1,
+      cex.axis = cextext, at = log(c(1, 6, 8)),
+      labels = c(1, 6, 8)
+    )
+  }
+
+  axis(2,
+    at = 1:(nf + 1),
+    labels = c(outforest$labs2, treatlab),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 12, hadj = 0
+  )
+  axis(2,
+    at = c(seq(length(treatlabs) / 2 + .5, (length(treatlabs) + 1) * 5, length(treatlabs) + 1), nf + 1),
+    labels = c(unique(rev(labs1)), "SBP"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 19, hadj = 0
+  )
+
+  axis(2,
+    at = c(1:(nf + 1)),
+    labels = c(outforest$percent, "% patients"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 5.5, hadj = 0.5
+  )
+
+  axis(2,
+    at = c(1:(nf + 1)),
+    labels = c(outforest$hrci, "HR (95% CI)"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
   )
 }
-
-matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
-
-atmy <- seq(0.9, 5.5, 0.1)
-atmy2 <- atmy
-atmy2[!atmy %in% c(1, 2, 3, 4, 5)] <- NA
-axis(1,
-  cex.axis = cextext, at = log(atmy),
-  labels = atmy2
-)
-axis(1,
-  cex.axis = cextext, at = log(5),
-  labels = 5
-)
-
-axis(2,
-  at = 1:nf,
-  labels = outforest$labs2,
-  cex.axis = cextext, tick = FALSE, las = 2, line = 8, hadj = 0
-)
-axis(2,
-  at = seq(2.5, nf, 5),
-  labels = unique(rev(labs1)),
-  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
-)
-
-axis(2,
-  at = c(1:nf, nf + 1),
-  labels = c(outforest$hrci, "HR (95% CI)"),
-  cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
-)
 ```
 
-```{r forestadj, fig.cap="Adjusted Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
+```{r forestuniras, fig.cap="Crude Forestplot - association between systolic blood pressure/ras and CVD/First HFH", dependson="foresthr", cache=cacheon}
+foresthr("sysbp_ras", "shf_ras", treatlab = "RASi", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE)
+```
 
-modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "hf_bbl", "shf_mra")]
+```{r forestadjras, fig.cap="Adjusted Forestplot - association between systolic blood pressure/ras and CVD/First HFH", dependson="foresthr", cache=cacheon}
 
-# adjusted
-modm <- with(impdata, coxph(formula(paste0(
-  "Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == 'Yes') ~ sysbp_suptreat + ", paste(modvarstmp, collapse = " + ")
-))))
+foresthr("sysbp_ras", "shf_ras", treatlab = "RASi", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = TRUE)
+```
 
-# df the number of events minus the regression coefficients.
-# There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
-modms <- summary(pool(modm,
-  dfcom = (modm$analyses[[1]]$nevent - length(modm$analyses[[1]]$coefficients))
-))
+```{r forestunibbl, fig.cap="Crude Forestplot - association between systolic blood pressure/bbl and CVD/First HFH", dependson="foresthr", cache=cacheon}
+foresthr("sysbp_bbl", "shf_bbl", treatlab = "Bbl", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE)
+```
 
-labs1 <- rep(c("SBP >=140 mmHg", "SBP 120-139 mmHg", "SBP 100-119 mmHg", "SBP 90-99 mmHg", "SBP <90 mmHg"), each = 4)
-labs2 <- rep(c("ST 100%", "ST 51-99%", "ST 50%", "ST<50%"), 5)
+```{r forestadjbbl, fig.cap="Adjusted Forestplot - association between systolic blood pressure/bbl and CVD/First HFH", dependson="foresthr", cache=cacheon}
 
-loghr <- c(0, modms$estimate[1:length(labs1) - 1])
-loglci <- c(0, modms$estimate[1:length(labs1) - 1] - global_z05 * modms$std.error[1:length(labs1) - 1])
-loguci <- c(0, modms$estimate[1:length(labs1) - 1] + global_z05 * modms$std.error[1:length(labs1) - 1])
-hrci <- paste0(
-  dF(exp(loghr), 1), " (",
-  dF(exp(loglci), 1), "-",
-  dF(exp(loguci), 1), ")"
-)
-hrci[1] <- "ref"
+foresthr(treatvar = "sysbp_bbl", treatlab = "Bbl", "shf_bbl", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = TRUE)
+```
 
+```{r forestunimra, fig.cap="Crude Forestplot - association between systolic blood pressure/mra and CVD/First HFH", dependson="foresthr", cache=cacheon}
+foresthr(treatvar = "sysbp_mra", treatlab = "MRA", novar = "shf_mra", treatlabs = c("treated", "not treated"), adj = FALSE)
+```
 
-outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci))
-outforest <- rbind(
-  outforest[1:4, ], rep(NA, 6),
-  outforest[5:8, ], rep(NA, 6),
-  outforest[9:12, ], rep(NA, 6),
-  outforest[13:16, ], rep(NA, 6),
-  outforest[17:20, ]
-)
-outforest <- outforest %>% arrange(desc(row_number()))
+```{r forestadjmra, fig.cap="Adjusted Forestplot - association between systolic blood pressure/mra and CVD/First HFH", dependson="foresthr", cache=cacheon}
 
-nf <- nrow(outforest)
-
-# exp(min(loglci, na.rm = T))
-# exp(max(loguci, na.rm = T))
-
-# c(bottom, left, top, right)
-par(mar = c(2, 17, 1, 2) + 0.2)
-
-cextext <- 0.9
-
-plot(outforest$loghr, 1:nf,
-  cex = 1.2,
-  xlim = c(
-    log(.9),
-    log(3.5)
-  ),
-  xlab = NA,
-  ylim = c(1, nf + .4),
-  axes = FALSE,
-  ylab = NA,
-  main = NA,
-  type = "p",
-  pch = 22,
-  bg = global_kicols[1],
-  col = global_kicols[1]
-)
-
-for (i in 1:nf) {
-  lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i),
-    col = global_kicols[1], cex = 2
-  )
-}
-
-matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
-
-atmy <- seq(0.9, 3.5, 0.1)
-atmy2 <- atmy
-atmy2[!atmy %in% c(1, 1.5, 2, 2.5, 3, 3.5)] <- NA
-axis(1,
-  cex.axis = cextext, at = log(atmy),
-  labels = atmy2
-)
-axis(1,
-  cex.axis = cextext, at = log(5),
-  labels = 5
-)
-
-axis(2,
-  at = 1:nf,
-  labels = outforest$labs2,
-  cex.axis = cextext, tick = FALSE, las = 2, line = 8, hadj = 0
-)
-axis(2,
-  at = seq(2.5, nf, 5),
-  labels = unique(rev(labs1)),
-  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
-)
-
-axis(2,
-  at = c(1:nf, nf + 1),
-  labels = c(outforest$hrci, "HR (95% CI)"),
-  cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
-)
+foresthr("sysbp_mra", "shf_mra", treatlab = "MRA", treatlabs = c("treated", "not treated"), adj = TRUE)
 ```

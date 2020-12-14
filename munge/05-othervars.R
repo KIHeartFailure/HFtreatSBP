@@ -47,6 +47,16 @@ pdata <- pdata %>%
     labels = c("Stable group", "Descrease SBP + increase treat", "Descrease SBP + stable treat")
     ),
 
+    treatsbp_diff4 = factor(case_when(
+      shf_bpsys_diff > -10 ~ 1,
+      shf_bpsys_diff <= -10 & supremumdose_diff > 0 ~ 2,
+      shf_bpsys_diff <= -10 & supremumdose_diff == 0 ~ 3,
+      shf_bpsys_diff <= -10 & supremumdose_diff < 0 ~ 4
+    ),
+    levels = 1:4,
+    labels = c("Stable group", "Descrease SBP + increase treat", "Descrease SBP + stable treat", "Descrease SBP + decrease treat")
+    ),
+
     shf_indexdtm_diff = shf_indexdtm - shf_indexdtm_pre,
 
     # hf hosp between are also counted as pats with hf hosp at last visit
@@ -150,6 +160,134 @@ pdata <- pdata %>%
       "SBP <90 mmHg & ST 51-99%",
       "SBP <90 mmHg & ST 50%",
       "SBP <90 mmHg & ST <50%"
+    )
+    ),
+
+    # create comb variable bp/treats
+    sysbp_ras = factor(case_when(
+      shf_bpsys_cat == "<90" & shf_rasdosemax_cat == "No" ~ 15,
+      shf_bpsys_cat == "<90" & shf_rasdosemax_cat == "<50%" ~ 14,
+      shf_bpsys_cat == "<90" & shf_rasdosemax_cat == ">=50%" ~ 13,
+
+      shf_bpsys_cat == "90-99" & shf_rasdosemax_cat == "No" ~ 12,
+      shf_bpsys_cat == "90-99" & shf_rasdosemax_cat == "<50%" ~ 11,
+      shf_bpsys_cat == "90-99" & shf_rasdosemax_cat == ">=50%" ~ 10,
+
+      shf_bpsys_cat == "100-119" & shf_rasdosemax_cat == "No" ~ 9,
+      shf_bpsys_cat == "100-119" & shf_rasdosemax_cat == "<50%" ~ 8,
+      shf_bpsys_cat == "100-119" & shf_rasdosemax_cat == ">=50%" ~ 7,
+
+      shf_bpsys_cat == "120-139" & shf_rasdosemax_cat == "No" ~ 6,
+      shf_bpsys_cat == "120-139" & shf_rasdosemax_cat == "<50%" ~ 5,
+      shf_bpsys_cat == "120-139" & shf_rasdosemax_cat == ">=50%" ~ 4,
+
+      shf_bpsys_cat == ">=140" & shf_rasdosemax_cat == "No" ~ 3,
+      shf_bpsys_cat == ">=140" & shf_rasdosemax_cat == "<50%" ~ 2,
+      shf_bpsys_cat == ">=140" & shf_rasdosemax_cat == ">=50%" ~ 1
+    ),
+    levels = 1:15,
+    labels = c(
+      "SBP >=140 mmHg & dose >=50%",
+      "SBP >=140 mmHg & dose <50%",
+      "SBP >=140 mmHg & not treated",
+
+      "SBP 120-139 mmHg & dose >=50%",
+      "SBP 120-139 mmHg & dose <50%",
+      "SBP 120-139 mmHg & not treated",
+
+      "SBP 100-119 mmHg & dose >=50%",
+      "SBP 100-119 mmHg & dose <50%",
+      "SBP 100-119 mmHg & not treated",
+
+      "SBP 90-99 mmHg & dose >=50%",
+      "SBP 90-99 mmHg & dose <50%",
+      "SBP 90-99 mmHg & not treated",
+
+      "SBP <90 mmHg & dose >=50%",
+      "SBP <90 mmHg & dose <50%",
+      "SBP <90 mmHg & not treated"
+    )
+    ),
+
+    # create comb variable bp/treats
+    sysbp_bbl = factor(case_when(
+      shf_bpsys_cat == "<90" & shf_bbldosemax_cat == "No" ~ 15,
+      shf_bpsys_cat == "<90" & shf_bbldosemax_cat == "<50%" ~ 14,
+      shf_bpsys_cat == "<90" & shf_bbldosemax_cat == ">=50%" ~ 13,
+
+      shf_bpsys_cat == "90-99" & shf_bbldosemax_cat == "No" ~ 12,
+      shf_bpsys_cat == "90-99" & shf_bbldosemax_cat == "<50%" ~ 11,
+      shf_bpsys_cat == "90-99" & shf_bbldosemax_cat == ">=50%" ~ 10,
+
+      shf_bpsys_cat == "100-119" & shf_bbldosemax_cat == "No" ~ 9,
+      shf_bpsys_cat == "100-119" & shf_bbldosemax_cat == "<50%" ~ 8,
+      shf_bpsys_cat == "100-119" & shf_bbldosemax_cat == ">=50%" ~ 7,
+
+      shf_bpsys_cat == "120-139" & shf_bbldosemax_cat == "No" ~ 6,
+      shf_bpsys_cat == "120-139" & shf_bbldosemax_cat == "<50%" ~ 5,
+      shf_bpsys_cat == "120-139" & shf_bbldosemax_cat == ">=50%" ~ 4,
+
+      shf_bpsys_cat == ">=140" & shf_bbldosemax_cat == "No" ~ 3,
+      shf_bpsys_cat == ">=140" & shf_bbldosemax_cat == "<50%" ~ 2,
+      shf_bpsys_cat == ">=140" & shf_bbldosemax_cat == ">=50%" ~ 1
+    ),
+    levels = 1:15,
+    labels = c(
+      "SBP >=140 mmHg & dose >=50%",
+      "SBP >=140 mmHg & dose <50%",
+      "SBP >=140 mmHg & not treated",
+
+      "SBP 120-139 mmHg & dose >=50%",
+      "SBP 120-139 mmHg & dose <50%",
+      "SBP 120-139 mmHg & not treated",
+
+      "SBP 100-119 mmHg & dose >=50%",
+      "SBP 100-119 mmHg & dose <50%",
+      "SBP 100-119 mmHg & not treated",
+
+      "SBP 90-99 mmHg & dose >=50%",
+      "SBP 90-99 mmHg & dose <50%",
+      "SBP 90-99 mmHg & not treated",
+
+      "SBP <90 mmHg & dose >=50%",
+      "SBP <90 mmHg & dose <50%",
+      "SBP <90 mmHg & not treated"
+    )
+    ),
+
+    # create comb variable bp/treats
+    sysbp_mra = factor(case_when(
+      shf_bpsys_cat == "<90" & shf_mradosemax_cat == "No" ~ 10,
+      shf_bpsys_cat == "<90" & shf_mradosemax_cat == "Yes" ~ 9,
+
+      shf_bpsys_cat == "90-99" & shf_mradosemax_cat == "No" ~ 8,
+      shf_bpsys_cat == "90-99" & shf_mradosemax_cat == "Yes" ~ 7,
+
+      shf_bpsys_cat == "100-119" & shf_mradosemax_cat == "No" ~ 6,
+      shf_bpsys_cat == "100-119" & shf_mradosemax_cat == "Yes" ~ 5,
+
+      shf_bpsys_cat == "120-139" & shf_mradosemax_cat == "No" ~ 4,
+      shf_bpsys_cat == "120-139" & shf_mradosemax_cat == "Yes" ~ 3,
+
+      shf_bpsys_cat == ">=140" & shf_mradosemax_cat == "No" ~ 2,
+      shf_bpsys_cat == ">=140" & shf_mradosemax_cat == "Yes" ~ 1
+    ),
+    levels = 1:10,
+    labels = c(
+      "SBP >=140 mmHg & treated",
+      "SBP >=140 mmHg & not treated",
+
+      "SBP 120-139 mmHg & treated",
+      "SBP 120-139 mmHg & not treated",
+
+      "SBP 100-119 mmHg & treated",
+      "SBP 100-119 mmHg & not treated",
+
+      "SBP 90-99 mmHg & treated",
+      "SBP 90-99 mmHg & not treated",
+
+      "SBP <90 mmHg & treated",
+      "SBP <90 mmHg & not treated"
     )
     ),
 

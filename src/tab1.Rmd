@@ -1,24 +1,61 @@
 ```{r tab1, cache=cacheon}
 
-tab1_tmp <- CreateTableOne(
+# Ras
+tab1_ras <- print(CreateTableOne(
   vars = tabvars,
-  strata = "supremumdose_cat",
+  strata = "shf_rasdosemax_cat",
   data = pdata
-)
-
-tab1 <- print(tab1_tmp,
+), 
   varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars,
   test = TRUE,
   catDigits = 1, contDigits = 1,
-  explain = FALSE
+  explain = FALSE,
+  noSpaces = TRUE
 )
 
-tab1out <- cbind(tab1[, 7], tab1[, 1:5])
+tab1_ras <- as_tibble(cbind(Variables = rownames(tab1_ras), tab1_ras)) %>%
+    select(Variables, Missing, No:p)
 
-tab1out <- data.frame(rownames(tab1out), tab1out)
-colnames(tab1out) <- sanitizeTextFunc(c(
-  "Variables", "Missing (%)", "<50%", "50%", "51-99%", "100%", "p-value"
-))
+# bbl
+tab1_bbl <- print(CreateTableOne(
+  vars = tabvars,
+  strata = "shf_bbldosemax_cat",
+  data = pdata
+), 
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars,
+  test = TRUE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE,
+  noSpaces = TRUE
+)
+
+tab1_bbl <- as_tibble(cbind(Variables = rownames(tab1_bbl), tab1_bbl)) %>%
+    select(Variables, No:p)
+
+# mra
+tab1_mra <- print(CreateTableOne(
+  vars = tabvars,
+  strata = "shf_mradosemax_cat",
+  data = pdata
+), 
+  varLabels = TRUE, missing = TRUE, printToggle = FALSE, nonnormal = tabvars,
+  test = TRUE,
+  catDigits = 1, contDigits = 1,
+  explain = FALSE,
+  noSpaces = TRUE
+)
+
+tab1_mra <- as_tibble(cbind(Variables = rownames(tab1_mra), tab1_mra)) %>%
+    select(Variables, No:p)
+  
+tab1out <- Reduce(
+  function(...) {
+    full_join(...,
+      by = "Variables"
+    )
+  },
+  list(tab1_ras, tab1_bbl, tab1_mra)
+)
 
 ## fix footnotes and white space
 ## white space removed in kable function.
@@ -29,6 +66,8 @@ tab1out <- tab1out %>%
     Variables = sub("^ ", ". ", Variables),
     Variables = sanitizeTextFunc(Variables)
   )
+
+write.xlsx(tab1out, paste0("./output/tabs/tab1_", Sys.Date(), ".xlsx"), rowNames = FALSE)
 
 ## add footnote about ras (arb, acei)
 
@@ -44,20 +83,25 @@ tab1out$Variables <- ifelse(stri_extract_first_words(tab1out$Variablesforfoot) %
 
 tab1out <- tab1out %>% select(-Variablesforfoot)
 
-# remove space between ( %
-tab1out <- tab1out %>%
-  mutate(across(everything(), str_replace_all, fixed("( "), "("))
+colnames(tab1out) <- sanitizeTextFunc(c(
+  "Variables", "Missing (%)", 
+  levels(pdata$shf_rasdosemax_cat), "p-value",
+  levels(pdata$shf_bbldosemax_cat), "p-value",
+  levels(pdata$shf_mradosemax_cat), "p-value"
+))
 
-write.xlsx(tab1out, paste0("./output/tabs/tab1_", Sys.Date(), ".xlsx"), rowNames = FALSE)
+myHeader <- c(" " = 1, " " = 1, "Ras" = 4, "Bbl" = 4, "mra" = 3)
+names(myHeader) <- c(" ", " ", "Ras", "Bbl", "mra")
 
 footnote(
   mykable(tab1out,
-    fontsize = 7,
-    caption = "Baseline characteristics by the supremum treatment variable",
+    fontsize = 3,
+    caption = "Baseline characteristics by ras, bbl and mra",
     longtable = TRUE,
     escape = FALSE
   ) %>%
-    landscape(),
+    landscape() %>%
+    add_header_above(myHeader),
   general = c(
     "Categorical variables are presented with n (%) and tested with chi-square test and continuous variables with median [q1-q3] and tested with Kruskal-Wallis Rank Sum test.",
     "Variables with prefix shf_ are from the SwedeHF, sos_ from NPR, shf_sos_ combinded information from SwedeHF and NPR."
