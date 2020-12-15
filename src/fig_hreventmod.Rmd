@@ -1,0 +1,143 @@
+```{r foresthreventmod, cache=cacheon, fig.cap="Forestplot - adjusted association between systolic blood pressure/treatments and CVD/First HFH"}
+
+foresthreventmod <- function(time = "sos_outtime_hosphf",
+                             event = "sos_out_deathcvhosphf",
+                             dosevarkat,
+                             novar,
+                             treatlab, 
+                             treatlabs) {
+  levs.st <- levels(pdata %>% pull(!!sym(dosevarkat)))
+  n.levs.st <- length(levs.st)
+
+  out <- data.frame(matrix(NA, ncol = 8, nrow = n.levs.st))
+  colnames(out) <- c("treat", "lev", "hrci", "p-value", "loghr", "lci", "uci", "percent")
+
+  modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", novar)]
+
+  # %
+  out$percent <- pdata %>%
+    count(!!sym(dosevarkat)) %>%
+    mutate(per = paste0(dF(n / sum(n) * 100, 1), "%")) %>%
+    pull(per)
+
+  for (i in seq_along(levs.st)) {
+    out[i, 1] <- treatlab
+    out[i, 2] <- treatlabs[i]
+
+    # adjusted
+    stmod <- with(impdata, coxph(formula(paste0(
+      "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys * relevel(",
+      dosevarkat, ", ref = '", levs.st[i],
+      "') + ", paste(modvarstmp, collapse = " + ")
+    ))))
+
+    # df the number of events minus the regression coefficients.
+    # There is support for this from middle of page 149 of the book by Parmer & Machin (ISBN 0471936405)
+    stmods <- summary(pool(stmod,
+      dfcom = (stmod$analyses[[1]]$nevent - length(stmod$analyses[[1]]$coefficients))
+    ))
+
+    out$loghr[i] <- stmods$estimate[1] * 10
+    out$lci[i] <- (stmods$estimate[1] - global_z05 * stmods$std.error[1]) * 10
+    out$uci[i] <- (stmods$estimate[1] + global_z05 * stmods$std.error[1]) * 10
+
+    # hr + ci
+    out[i, 3:4] <- c(
+      paste0(
+        dF(exp(out$loghr[i]), dig = 2),
+        " (", dF(exp(out$lci[i]), dig = 2),
+        "-", dF(exp(out$uci[i]), dig = 2), ")"
+      ),
+      dF(stmods$p.value[1], 3, p = TRUE)
+    )
+  }
+  return(out)
+}
+
+foresthr <- foresthreventmod(
+  dosevarkat = "shf_rasdosemax_cat",
+  novar = "shf_ras",
+  treatlab = "RASi", 
+  treatlabs = c("not treated", "dose < 50%", "dose >= 50%")
+)
+foresthr <- bind_rows(foresthr, foresthreventmod(
+  dosevarkat = "shf_bbldosemax_cat",
+  novar = "shf_bbl",
+  treatlab = "Bbl", 
+  treatlabs = c("not treated", "dose < 50%", "dose >= 50%")
+))
+foresthr <- bind_rows(foresthr, foresthreventmod(
+  dosevarkat = "shf_mradosemax_cat",
+  novar = "shf_mra",
+  treatlab = "MRA", 
+  treatlabs = c("not treated", "treated")
+))
+
+foresthr <- rbind(
+  foresthr[1:3, ], rep(NA, 8),
+  foresthr[4:6, ], rep(NA, 8),
+  foresthr[7:8, ]
+)
+foresthr <- foresthr %>% arrange(desc(row_number()))
+
+nf <- nrow(foresthr)
+# exp(min(loglci, na.rm = T))
+# exp(max(loguci, na.rm = T))
+
+# c(bottom, left, top, right)
+par(mar = c(2, 17, 1, 2) + 0.2)
+
+cextext <- 0.9
+
+plot(foresthr$loghr, 1:nf,
+  cex = 1.2,
+  xlim = c(
+    log(.85),
+    log(1)
+  ),
+  xlab = NA,
+  ylim = c(1, nf + 1),
+  axes = FALSE,
+  ylab = NA,
+  main = NA,
+  type = "p",
+  pch = 22,
+  bg = global_kicols[1],
+  col = global_kicols[1]
+)
+
+for (i in 1:nf) {
+  lines(c(foresthr$lci[i], foresthr$uci[i]), c(i, i),
+    col = global_kicols[1], cex = 2
+  )
+}
+
+matplot(c(log(1), log(1)), c(-1, nf), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+axis(1,
+  cex.axis = cextext,
+  at = log(seq(.85, 1, .05)),
+  labels = seq(.85, 1, .05)
+)
+axis(2,
+  at = 1:nf,
+  labels = foresthr$lev,
+  cex.axis = cextext, tick = FALSE, las = 2, line = 13, hadj = 0
+)
+  axis(2,
+    at = c(1.5, 5, 9),
+    labels = c("MRA", "Bbl", "RASi"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
+  )
+axis(2,
+  at = c(1:(nf + 1)),
+  labels = c(foresthr$percent, "% patients"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 6.5, hadj = 0.5
+)
+
+axis(2,
+  at = c(1:(nf + 1)),
+  labels = c(foresthr$hrci, "HR (95% CI)"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 2, hadj = 0.5
+)
+```

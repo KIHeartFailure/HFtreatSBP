@@ -200,8 +200,15 @@ The median (min-max) follow-up is
 \clearpage
 \newpage
 
+```{r, child = "../src/fig_hreventmod.Rmd"}
+
+```
+
+\clearpage
+\newpage
+
 Forest plot presenting the HR and 95% CI from a cox model with the variable  
-systolic bp * ras, bbl, mra treatment respectively. Both variables are categorical (in the table one is 
+systolic bp * ras, bbl, mra treatment respectively. Both variables are categorical (in the table/forest plot above one is 
 continuous).  
 
 ```{r, child = "../src/fig_hr.Rmd"}

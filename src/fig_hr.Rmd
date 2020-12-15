@@ -156,21 +156,21 @@ foresthr <- function(treatvar, treatlab, novar, treatlabs = c("dose >= 50%", "do
 ```
 
 ```{r forestuniras, fig.cap="Crude Forestplot - association between systolic blood pressure/ras and CVD/First HFH", dependson="foresthr", cache=cacheon}
-foresthr("sysbp_ras", "shf_ras", treatlab = "RASi", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE)
+foresthr(treatvar = "sysbp_ras", novar = "shf_ras", treatlab = "RASi", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE)
 ```
 
 ```{r forestadjras, fig.cap="Adjusted Forestplot - association between systolic blood pressure/ras and CVD/First HFH", dependson="foresthr", cache=cacheon}
 
-foresthr("sysbp_ras", "shf_ras", treatlab = "RASi", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = TRUE)
+foresthr("sysbp_ras", novar = "shf_ras", treatlab = "RASi", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = TRUE)
 ```
 
 ```{r forestunibbl, fig.cap="Crude Forestplot - association between systolic blood pressure/bbl and CVD/First HFH", dependson="foresthr", cache=cacheon}
-foresthr("sysbp_bbl", "shf_bbl", treatlab = "Bbl", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE)
+foresthr("sysbp_bbl", novar = "shf_bbl", treatlab = "Bbl", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = FALSE)
 ```
 
 ```{r forestadjbbl, fig.cap="Adjusted Forestplot - association between systolic blood pressure/bbl and CVD/First HFH", dependson="foresthr", cache=cacheon}
 
-foresthr(treatvar = "sysbp_bbl", treatlab = "Bbl", "shf_bbl", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = TRUE)
+foresthr(treatvar = "sysbp_bbl", treatlab = "Bbl", novar = "shf_bbl", treatlabs = c("dose >= 50%", "dose < 50%", "not treated"), adj = TRUE)
 ```
 
 ```{r forestunimra, fig.cap="Crude Forestplot - association between systolic blood pressure/mra and CVD/First HFH", dependson="foresthr", cache=cacheon}
@@ -179,5 +179,5 @@ foresthr(treatvar = "sysbp_mra", treatlab = "MRA", novar = "shf_mra", treatlabs 
 
 ```{r forestadjmra, fig.cap="Adjusted Forestplot - association between systolic blood pressure/mra and CVD/First HFH", dependson="foresthr", cache=cacheon}
 
-foresthr("sysbp_mra", "shf_mra", treatlab = "MRA", treatlabs = c("treated", "not treated"), adj = TRUE)
+foresthr("sysbp_mra", novar = "shf_mra", treatlab = "MRA", treatlabs = c("treated", "not treated"), adj = TRUE)
 ```
