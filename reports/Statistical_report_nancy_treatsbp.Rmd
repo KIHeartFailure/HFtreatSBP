@@ -84,7 +84,7 @@ A supremum treatment variable is created as follows:
 
 - 0.5 points for use of <50% of target dose (<100% of target dose for MRA),
 
-- 1 point for use of >=50% of target dose (>=100% target dose for MRA).”
+- 1 point for use of >=50% of target dose (>=100% target dose for MRA).
 
 1 variable is derived for ACEi/ARBs (being the highest value of the 2 variables), 
 1 for bbl and 1 for MRA. 
@@ -146,12 +146,12 @@ Continuous variables `r paste0(kontvars, collapse = ", ")` are modelled using cu
 `r paste0(stratavars, collapse = ", ")` 
 are included as a strata variable in the model due to non-proportional hazards. 
 
-In order to present the supremum dose variable and systolic blood pressure 
+In order to present the supremum dose variable/treatments and systolic blood pressure 
 in subgroups they are modelled with an interaction term. 
 The HR (95% CI) presented is for continuous systolic blood pressure in units of 10
-in the supremum treat subgroups and the continuous supremum treat variable in the 
+in the treatment subgroups and the continuous treatments in the 
 systolic blood pressure subgroups (so the HR are from separate models, with the 
-categorical and continuous SBP and treat interchanging).  
+categorical and continuous SBP and treatment interchanging).  
 
 In the models with the supremum treatment variable ras, bbl and mra are not 
 included as separate variables in the models. Since MRA dose was not 
@@ -234,7 +234,7 @@ visit with 10 mmHg or more and an increase in the supremum treatment variable.
 - Decrease SBP + stable treat = Decrease in SBP between second last and last 
 visit with 10 mmHg or more and a stable or decrease in the supremum treatment variable.
 
-Another change variable (names 4 groups below) was created defined as: 
+Another change variable (named 4 groups below) was created defined as: 
 
 - Stable group = Decrease in SBP between second last and last visit with less 
 than 10 mmHg.
