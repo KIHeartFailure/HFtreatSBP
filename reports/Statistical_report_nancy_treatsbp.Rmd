@@ -5,6 +5,7 @@ author: 'Statistician: Lina Benson'
 date: "`r Sys.Date()`"
 output:
   pdf_document:
+    dev: cairo_pdf
     fig_caption: yes
     fig_height: 7
     fig_width: 7
@@ -112,11 +113,11 @@ as the Nelson-Aalen estimator.
 
 ## Baseline characteristics
 
-```{r, child = "../src/tab1.Rmd"}
+```{r, child = "./src/tab1.Rmd"}
 
 ```
 
-```{r, child = "../src/tab_treat.Rmd"}
+```{r, child = "./src/tab_treat.Rmd"}
 
 ```
 
@@ -127,7 +128,7 @@ with knots placed at the quintiles of sbp in a cox regression is plotted.
 Partly for the primary outcome, CVD/First HFH, and partly for CVD as outcome. 
 The curve is centred at the median sys bp. 
 
-```{r, child = "../src/spline_ass_out_sbp.Rmd"}
+```{r, child = "./src/spline_ass_out_sbp.Rmd"}
 
 ```
 
@@ -135,9 +136,6 @@ The curve is centred at the median sys bp.
 \newpage
 
 ## Outcomes
-
-Kaplan-Meier curves for CVD/First HFH are presented for the supremum treatment variable, ras, bbl and
-mra. 
 
 Crude and adjusted cox proportional hazards regressions were used to evaluate the association 
 between the supremum dose variable/systolic blood pressure and the respective outcomes. 
@@ -149,15 +147,10 @@ are included as a strata variable in the model due to non-proportional hazards.
 In order to present the supremum dose variable/treatments and systolic blood pressure 
 in subgroups they are modelled with an interaction term. 
 The HR (95% CI) presented is for continuous systolic blood pressure in units of 10
-in the treatment subgroups and the continuous treatments in the 
-systolic blood pressure subgroups (so the HR are from separate models, with the 
-categorical and continuous SBP and treatment interchanging).  
+in the treatment subgroups.  
 
 In the models with the supremum treatment variable ras, bbl and mra are not 
-included as separate variables in the models. Since MRA dose was not 
-collected in SwedeHF prior to 2014 a consistency analysis was therefore 
-performed for the primary endpoint with only 
-observations from 2014 with mra dose included in the supremum treatment variable. 
+included as separate variables in the models. 
 
 Data were censored at 2018-12-31 or death/emigration, 
 so this assumes that the risk of hf hospitalization 
@@ -172,35 +165,28 @@ The median (min-max) follow-up is
                                    `r pdata %>% summarise(sumpy = dF(sum(sos_outtime_death) / 365.25, dig = 0)) %>%
                                    pull(sumpy)` patient-years of follow-up.
 
-```{r, child = "../src/tab_event.Rmd"}
+```{r, child = "./src/tab_event.Rmd"}
 
 ```
 
 \clearpage
 \newpage
 
-```{r, child = "../src/km.Rmd"}
+```{r, child = "./src/tab_eventmod.Rmd"}
 
 ```
 
 \clearpage
 \newpage
 
-```{r, child = "../src/tab_eventmod_overall.Rmd"}
+```{r, child = "./src/fig_hr.Rmd"}
 
 ```
 
 \clearpage
 \newpage
 
-```{r, child = "../src/tab_eventmod.Rmd"}
-
-```
-
-\clearpage
-\newpage
-
-```{r, child = "../src/fig_hreventmod.Rmd"}
+```{r, child = "./src/fig_hr_sex.Rmd"}
 
 ```
 
@@ -208,10 +194,14 @@ The median (min-max) follow-up is
 \newpage
 
 Forest plot presenting the HR and 95% CI from a cox model with the variable  
-systolic bp * ras, bbl, mra treatment respectively. Both variables are categorical (in the table/forest plot above one is 
+systolic bp * ras, bbl, mra treatment respectively. Both variables are categorical (in the table/forest plot above sbp is 
 continuous).  
 
-```{r, child = "../src/fig_hr.Rmd"}
+```{r, child = "./src/fig_hreventmod.Rmd"}
+
+```
+
+```{r, child = "./src/fig_hreventmod_sex.Rmd"}
 
 ```
 
@@ -232,17 +222,6 @@ than 10 mmHg.
 visit with 10 mmHg or more and an increase in the supremum treatment variable.
 
 - Decrease SBP + stable treat = Decrease in SBP between second last and last 
-visit with 10 mmHg or more and a stable or decrease in the supremum treatment variable.
-
-Another change variable (named 4 groups below) was created defined as: 
-
-- Stable group = Decrease in SBP between second last and last visit with less 
-than 10 mmHg.
-
-- Decrease SBP + increase treat = Decrease in SBP between second last and last 
-visit with 10 mmHg or more and an increase in the supremum treatment variable.
-
-- Decrease SBP + stable treat = Decrease in SBP between second last and last 
 visit with 10 mmHg or more and a stable supremum treatment variable.
 
 - Decrease SBP + stable treat = Decrease in SBP between second last and last 
@@ -251,31 +230,14 @@ visit with 10 mmHg or more and decrease in the supremum treatment variable.
 The baseline variables presented in the table and adjusted for in the models 
 are from the LAST visit. 
 
-```{r, child = "../src/histogram_change.Rmd"}
-
-```
-
 \clearpage
 \newpage
 
-### 3 groups 
-```{r, child = "../src/tab1_change.Rmd"}
+```{r, child = "./src/tab1_change4groups.Rmd"}
 
 ```
 
-```{r, child = "../src/tab_eventmod_change.Rmd"}
-
-```
-
-\clearpage
-\newpage
-
-### 4 groups
-```{r, child = "../src/tab1_change4groups.Rmd"}
-
-```
-
-```{r, child = "../src/tab_eventmod_change4groups.Rmd"}
+```{r, child = "./src/tab_eventmod_change4groups.Rmd"}
 
 ```
 

@@ -35,26 +35,3 @@ matplot(bpsysterm$x,
   ylab = "Hazard Ratio"
 )
 ```
-
-```{r shapeofasscvd2, fig.cap="Shape of association between SBP and CVD"}
-mod <- coxph(Surv(sos_outtime_death, sos_out_deathcv == "Yes") ~ ns(shf_bpsys, df = 5),
-  data = pdata
-)
-ptemp <- termplot(mod, se = TRUE, plot = FALSE)
-bpsysterm <- ptemp$shf_bpsys
-center <- with(bpsysterm, y[x == quint_sbp$p50])
-ytemp <- bpsysterm$y + outer(bpsysterm$se, c(0, -global_z05, global_z05), "*")
-
-matplot(bpsysterm$x,
-  exp(ytemp - center),
-  log = "y",
-  type = "l",
-  lwd = 2,
-  lty = c(1, 2, 2),
-  col = c(global_kicols[1], global_kicols[4], global_kicols[4]),
-  xlim = c(80, 180),
-  ylim = c(.8, 3),
-  xlab = "Systolic blood pressure",
-  ylab = "Hazard Ratio"
-)
-```

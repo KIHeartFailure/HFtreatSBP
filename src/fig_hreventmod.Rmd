@@ -1,28 +1,33 @@
-```{r foresthreventmod, cache=cacheon, fig.cap="Forestplot - adjusted association between systolic blood pressure/treatments and CVD/First HFH"}
+```{r hreventmod, cache=cacheon}
 
 foresthreventmod <- function(time = "sos_outtime_hosphf",
                              event = "sos_out_deathcvhosphf",
                              dosevarkat,
                              novar,
-                             treatlab, 
                              treatlabs) {
   levs.st <- levels(pdata %>% pull(!!sym(dosevarkat)))
   n.levs.st <- length(levs.st)
 
-  out <- data.frame(matrix(NA, ncol = 8, nrow = n.levs.st))
-  colnames(out) <- c("treat", "lev", "hrci", "p-value", "loghr", "lci", "uci", "percent")
+  out <- data.frame(matrix(NA, ncol = 7, nrow = n.levs.st))
+  colnames(out) <- c("lev", "hrci", "p-value", "loghr", "lci", "uci", "n")
 
   modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", novar)]
 
-  # %
-  out$percent <- pdata %>%
-    count(!!sym(dosevarkat)) %>%
-    mutate(per = paste0(dF(n / sum(n) * 100, 1), "%")) %>%
-    pull(per)
+  # n event / N
+  n <- pdata %>%
+    group_by(!!sym(dosevarkat)) %>%
+    count(!!sym(event)) %>%
+    mutate(
+      tot = sum(n),
+      ntot = paste0(n, "/", tot)
+    ) %>%
+    ungroup() %>%
+    filter(!!sym(event) == "Yes")
+
+  out[, 7] <- n %>% pull(ntot)
 
   for (i in seq_along(levs.st)) {
-    out[i, 1] <- treatlab
-    out[i, 2] <- treatlabs[i]
+    out[i, 1] <- treatlabs[i]
 
     # adjusted
     stmod <- with(impdata, coxph(formula(paste0(
@@ -42,7 +47,7 @@ foresthreventmod <- function(time = "sos_outtime_hosphf",
     out$uci[i] <- (stmods$estimate[1] + global_z05 * stmods$std.error[1]) * 10
 
     # hr + ci
-    out[i, 3:4] <- c(
+    out[i, 2:3] <- c(
       paste0(
         dF(exp(out$loghr[i]), dig = 2),
         " (", dF(exp(out$lci[i]), dig = 2),
@@ -57,20 +62,17 @@ foresthreventmod <- function(time = "sos_outtime_hosphf",
 foresthr <- foresthreventmod(
   dosevarkat = "shf_rasdosemax_cat",
   novar = "shf_ras",
-  treatlab = "RASi", 
-  treatlabs = c("not treated", "dose < 50%", "dose >= 50%")
+  treatlabs = c("No RASi", "RASi dose <50%", "RASi dose \u2265150%")
 )
 foresthr <- bind_rows(foresthr, foresthreventmod(
   dosevarkat = "shf_bbldosemax_cat",
   novar = "shf_bbl",
-  treatlab = "Bbl", 
-  treatlabs = c("not treated", "dose < 50%", "dose >= 50%")
+  treatlabs = c("No BB", "BB dose <50%", "BB dose \u2265150%")
 ))
 foresthr <- bind_rows(foresthr, foresthreventmod(
   dosevarkat = "shf_mradosemax_cat",
   novar = "shf_mra",
-  treatlab = "MRA", 
-  treatlabs = c("not treated", "treated")
+  treatlabs = c("No MRA", "MRA")
 ))
 
 foresthr <- rbind(
@@ -79,13 +81,16 @@ foresthr <- rbind(
   foresthr[7:8, ]
 )
 foresthr <- foresthr %>% arrange(desc(row_number()))
+```
+
+```{r foresthreventmod, cache=cacheon, dependson="hreventmod", fig.cap="Forestplot - adjusted association between systolic blood pressure/treatments and CVD/First HFH"}
 
 nf <- nrow(foresthr)
 # exp(min(loglci, na.rm = T))
 # exp(max(loguci, na.rm = T))
 
 # c(bottom, left, top, right)
-par(mar = c(2, 17, 1, 2) + 0.2)
+par(mar = c(3, 17, 0, 2) + 0.2)
 
 cextext <- 0.9
 
@@ -96,7 +101,7 @@ plot(foresthr$loghr, 1:nf,
     log(1)
   ),
   xlab = NA,
-  ylim = c(1, nf + 1),
+  ylim = c(1, nf + 2),
   axes = FALSE,
   ylab = NA,
   main = NA,
@@ -117,27 +122,29 @@ matplot(c(log(1), log(1)), c(-1, nf), type = "l", lwd = 1, lty = 1, add = TRUE, 
 axis(1,
   cex.axis = cextext,
   at = log(seq(.85, 1, .05)),
-  labels = seq(.85, 1, .05)
+  labels = seq(.85, 1, .05),
+  gap.axis = -1000000
+)
+axis(1,
+  cex.axis = cextext,
+  at = (log(.85) - abs(log(1))) / 2,
+  labels = "Adjusted HR (95% CI)",
+  line = 1,
+  tick = FALSE
 )
 axis(2,
   at = 1:nf,
   labels = foresthr$lev,
-  cex.axis = cextext, tick = FALSE, las = 2, line = 13, hadj = 0
+  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
 )
-  axis(2,
-    at = c(1.5, 5, 9),
-    labels = c("MRA", "Bbl", "RASi"),
-    cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
-  )
 axis(2,
   at = c(1:(nf + 1)),
-  labels = c(foresthr$percent, "% patients"),
-  cex.axis = cextext, tick = FALSE, las = 2, line = 6.5, hadj = 0.5
+  labels = c(foresthr$n, "n event/N"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 7.5, hadj = 0.5
 )
-
 axis(2,
-  at = c(1:(nf + 1)),
-  labels = c(foresthr$hrci, "HR (95% CI)"),
+  at = c(1:nf, nf + 1, nf + 2),
+  labels = c(foresthr$hrci, "HR (95% CI)", "Adjusted"),
   cex.axis = cextext, tick = FALSE, las = 2, line = 2, hadj = 0.5
 )
 ```

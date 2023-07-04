@@ -1,8 +1,8 @@
 ```{r tab_eventmodchange4, cache=cacheon}
-survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
-  out <- data.frame(matrix(NA, ncol = 3, nrow = 8))
+survmychange <- function(time, event, myfiltcrude, myfiltadj) {
+  out <- data.frame(matrix(NA, ncol = 4, nrow = 8))
 
-  colnames(out) <- c("Model", "Subgroup", eventname)
+  colnames(out) <- c("Model", "Subgroup", "n event/N", "HR (95% CI), p-value")
 
   modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_ras", "shf_bbl", "shf_mra")]
 
@@ -11,6 +11,21 @@ survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
 
   out[1:4, 2] <- levels(pdata$treatsbp_diff4)
   out[5:8, 2] <- out[1:4, 2]
+
+  # n event / N
+  n <- pdata %>%
+    filter(!!enquo(myfiltcrude)) %>%
+    group_by(treatsbp_diff4) %>%
+    count(!!sym(event)) %>%
+    mutate(
+      tot = sum(n),
+      ntot = paste0(n, "/", tot)
+    ) %>%
+    ungroup() %>%
+    filter(!!sym(event) == "Yes")
+
+  out[1:4, 3] <- n %>% pull(ntot)
+  out[5:8, 3] <- n %>% pull(ntot)
 
   # crude
   mod <- coxph(formula(paste0(
@@ -21,7 +36,7 @@ survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
   mods <- summary(mod)
 
   # hr + ci
-  out[1:4, 3] <- c("ref", paste0(
+  out[1:4, 4] <- c("ref", paste0(
     dF(mods$conf.int[1:3, 1], dig = 2),
     " (", dF(mods$conf.int[1:3, 3], dig = 2),
     "-", dF(mods$conf.int[1:3, 4], dig = 2), "), ",
@@ -43,7 +58,7 @@ survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
   ))
 
   # hr + ci
-  out[5:8, 3] <- c("ref", paste0(
+  out[5:8, 4] <- c("ref", paste0(
     dF(exp(mods$estimate[1:3]), dig = 2),
     " (", dF(exp(mods$estimate[1:3] - global_z05 * mods$std.error[1:3]), dig = 2),
     "-", dF(exp(mods$estimate[1:3] + global_z05 * mods$std.error[1:3]), dig = 2), ")",
@@ -56,64 +71,28 @@ survmychange <- function(time, event, eventname, myfiltcrude, myfiltadj) {
 ```{r tab_eventmodchangeall4, cache=cacheon, dependson="tab_eventmodchange4"}
 cvmorthfhosp <- survmychange(
   time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
-  eventname = "CVD/First HFH",
+  # eventname = "CVD/First HFH",
   myfiltcrude = changepop1,
   myfiltadj = quote(changepop1)
 )
 
 cvmort <- survmychange(
   time = "sos_outtime_death", event = "sos_out_deathcv",
-  eventname = "CVD",
+  # eventname = "CVD",
   myfiltcrude = changepop1,
   myfiltadj = quote(changepop1)
 )
 
-survout <- bind_cols(cvmorthfhosp, cvmort[, 3])
+survout <- bind_cols(cvmorthfhosp, cvmort[, 3:4])
 names(survout) <- c(
   names(cvmorthfhosp),
-  names(cvmort)[3]
+  names(cvmort)[3:4]
 )
 
-myHeader <- c(" " = 1, " " = 1, "HR (95% CI), p-value" = 2)
-names(myHeader) <- c(" ", " ", "HR (95% CI), p-value")
-
 mykable(survout,
-  caption = "Asscociation between change variable (4 groups) and outcome in Cox analysis"
+  caption = "Asscociation between change variable and outcome in Cox analysis"
 ) %>%
-  add_header_above(myHeader)
+  add_header_above(c(" " = 2, "CVD/First HFH" = 2, "CVD" = 2))
 
 write.xlsx(survout, paste0("./output/tabs/eventtab_change4groups_", Sys.Date(), ".xlsx"), rowNames = FALSE)
-```
-
-```{r tab_eventmodchangeexclhosp4, cache=cacheon, dependson="tab_eventmodchange4"}
-cvmorthfhosp <- survmychange(
-  time = "sos_outtime_hosphf", event = "sos_out_deathcvhosphf",
-  eventname = "CVD/First HFH",
-  myfiltcrude = changepop2,
-  myfiltadj = quote(changepop2)
-)
-
-cvmort <- survmychange(
-  time = "sos_outtime_death", event = "sos_out_deathcv",
-  eventname = "CVD",
-  myfiltcrude = changepop2,
-  myfiltadj = quote(changepop2)
-)
-
-survout <- bind_cols(cvmorthfhosp, cvmort[, 3])
-names(survout) <- c(
-  names(cvmorthfhosp),
-  names(cvmort)[3]
-)
-
-
-myHeader <- c(" " = 1, " " = 1, "HR (95% CI), p-value" = 2)
-names(myHeader) <- c(" ", " ", "HR (95% CI), p-value")
-
-mykable(survout,
-  caption = "Asscociation between change variable (4 groups) and outcome in Cox analysis (excluding patients with HF hosp between visits)"
-) %>%
-  add_header_above(myHeader)
-
-write.xlsx(survout, paste0("./output/tabs/eventtab_change4groups_excluding_hfhosp_", Sys.Date(), ".xlsx"), rowNames = FALSE)
 ```

@@ -1,0 +1,135 @@
+```{r forestunisex, fig.cap="Crude Forestplot - association between systolic blood pressure/treatment and CVD/First HFH", cache=cacheon}
+
+forestsexfunc <- function(sex) {
+  n <- pdata %>%
+    filter(shf_sex == sex) %>%
+    group_by(sysbp_suptreat) %>%
+    count(sos_out_deathcvhosphf) %>%
+    mutate(
+      tot = sum(n),
+      ntot = paste0(n, "/", tot)
+    ) %>%
+    ungroup() %>%
+    filter(sos_out_deathcvhosphf == "Yes")
+
+  # crude
+
+  moduni <- coxph(Surv(sos_outtime_hosphf, sos_out_deathcvhosphf == "Yes") ~ sysbp_suptreat * shf_sex,
+    data = pdata %>% filter(shf_sex == sex)
+  )
+
+  modunis <- summary(moduni)
+
+  # labs <- levels(pdata$sysbp_suptreat)
+
+  labs1 <- rep(c("SBP \u2265140 mmHg", "SBP 120-139 mmHg", "SBP 100-119 mmHg", "SBP 90-99 mmHg", "SBP <90 mmHg"), each = 4)
+
+  labs2 <- rep(c("ST 100%", "ST 51-99%", "ST 50%", "ST <50%"), 5)
+
+  loghr <- c(0, modunis$coefficients[, 1])
+
+  loglci <- c(0, log(modunis$conf.int[, 3]))
+
+  loguci <- c(0, log(modunis$conf.int[, 4]))
+
+  hrci <- paste0(
+    dF(exp(loghr), 1), " (",
+    dF(exp(loglci), 1), "-",
+    dF(exp(loguci), 1), ")"
+  )
+
+  hrci[1] <- "ref"
+
+  outforest <- data.frame(cbind(labs1, labs2, loghr, loglci, loguci, hrci, ntot = n %>% pull(ntot)))
+
+  outforest <- rbind(
+    outforest[1:4, ], rep(NA, 6),
+    outforest[5:8, ], rep(NA, 6),
+    outforest[9:12, ], rep(NA, 6),
+    outforest[13:16, ], rep(NA, 6),
+    outforest[17:20, ]
+  )
+
+  outforest <- outforest %>% arrange(desc(row_number()))
+
+  nf <- nrow(outforest)
+
+  # exp(min(loglci, na.rm = T))
+  # exp(max(loguci, na.rm = T))
+  # c(bottom, left, top, right)
+
+  par(mar = c(3, 21, 1, 2) + 0.2)
+
+  cextext <- 0.9
+
+  plot(outforest$loghr, 1:nf,
+    cex = 1.2,
+    xlim = c(
+      log(.9),
+      log(7)
+    ),
+    xlab = "",
+    ylim = c(1, nf + 1.4),
+    axes = FALSE,
+    ylab = NA,
+    main = NA,
+    type = "p",
+    pch = 22,
+    bg = global_kicols[1],
+    col = global_kicols[1]
+  )
+
+  for (i in 1:nf) {
+    lines(c(outforest$loglci[i], outforest$loguci[i]), c(i, i),
+      col = global_kicols[1], cex = 2
+    )
+  }
+
+  matplot(c(log(1), log(1)), c(-1, nf + 1), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+  atmy <- seq(0.9, 7, 0.1)
+  atmy2 <- atmy
+  atmy2[!dF(atmy, 1) %in% dF(c(1, 2, 3, 4, 5, 6, 7), 1)] <- NA
+  axis(1,
+    cex.axis = cextext, at = log(atmy),
+    gap.axis = -100000,
+    labels = atmy2
+  )
+  axis(1,
+    cex.axis = cextext,
+    at = (log(7) - abs(log(0.9))) / 2,
+    labels = "Crude HR (95% CI)",
+    line = 1,
+    tick = FALSE
+  )
+  axis(2,
+    at = seq(2.5, nf, 5),
+    labels = unique(rev(labs1)),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 20, hadj = 0
+  )
+
+  axis(2,
+    at = c(1:nf, nf + 1, nf + 2),
+    labels = c(outforest$labs2, "dose", "HF treatment"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 12.2, hadj = 0
+  )
+
+  axis(2,
+    at = c(1:nf, nf + 1),
+    labels = c(outforest$ntot, "n event/N"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 7.3, hadj = 0
+  )
+
+  axis(2,
+    at = c(1:nf, nf + 1, nf + 2), labels = c(outforest$hrci, "HR (95% CI)", "Crude"),
+    cex.axis = cextext, tick = FALSE, las = 2, line = 1, hadj = 0.5
+  )
+}
+```
+
+```{r forestunifemale, dependson="forestunisex", fig.cap="Crude Forestplot - association between systolic blood pressure/treatment and CVD/First HFH - Female", cache=cacheon}
+forestsexfunc("Female")
+```
+
+```{r forestunimale, dependson="forestunisex", fig.cap="Crude Forestplot - association between systolic blood pressure/treatment and CVD/First HFH - Male", cache=cacheon}
+forestsexfunc("Male")
+```

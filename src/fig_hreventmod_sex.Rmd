@@ -1,0 +1,258 @@
+```{r hreventmodsex, cache=cacheon}
+
+foresthreventmod <- function(time = "sos_outtime_hosphf",
+                             event = "sos_out_deathcvhosphf",
+                             dosevarkat,
+                             novar,
+                             treatlabs,
+                             sex,
+                             impdatasex) {
+  levs.st <- levels(pdata %>% pull(!!sym(dosevarkat)))
+  n.levs.st <- length(levs.st)
+
+  out <- data.frame(matrix(NA, ncol = 7, nrow = n.levs.st))
+  colnames(out) <- c("lev", "hrci", "p-value", "loghr", "lci", "uci", "n")
+
+  modvarstmp <- modvarsnsstrata[!modvarsnsstrata %in% c("shf_bpsys", "shf_sex", novar)]
+
+  # n event / N
+  n <- pdata %>%
+    filter(shf_sex == sex) %>%
+    group_by(!!sym(dosevarkat)) %>%
+    count(!!sym(event)) %>%
+    mutate(
+      tot = sum(n),
+      ntot = paste0(n, "/", tot)
+    ) %>%
+    ungroup() %>%
+    filter(!!sym(event) == "Yes")
+
+  out[, 7] <- n %>% pull(ntot)
+
+  for (i in seq_along(levs.st)) {
+    out[i, 1] <- treatlabs[i]
+
+    # adjusted
+    stmod <- with(impdatasex, coxph(formula(paste0(
+      "Surv(", time, ", ", event, "== 'Yes') ~ shf_bpsys * relevel(",
+      dosevarkat, ", ref = '", levs.st[i],
+      "') + ", paste(modvarstmp, collapse = " + ")
+    ))))
+
+    stmods <- summary(pool(stmod))
+
+    out$loghr[i] <- stmods$estimate[1] * 10
+    out$lci[i] <- (stmods$estimate[1] - global_z05 * stmods$std.error[1]) * 10
+    out$uci[i] <- (stmods$estimate[1] + global_z05 * stmods$std.error[1]) * 10
+
+    # hr + ci
+    out[i, 2:3] <- c(
+      paste0(
+        dF(exp(out$loghr[i]), dig = 2),
+        " (", dF(exp(out$lci[i]), dig = 2),
+        "-", dF(exp(out$uci[i]), dig = 2), ")"
+      ),
+      dF(stmods$p.value[1], 3, p = TRUE)
+    )
+  }
+  return(out)
+}
+
+# Female
+
+impdatafemale <- miceadds::subset_datlist(impdata, expr_subset = pdata$shf_sex == "Female")
+
+foresthr <- foresthreventmod(
+  dosevarkat = "shf_rasdosemax_cat",
+  novar = "shf_ras",
+  treatlabs = c("No RASi", "RASi dose <50%", "RASi dose \u2265150%"),
+  sex = "Female",
+  impdatasex = impdatafemale
+)
+foresthr <- bind_rows(foresthr, foresthreventmod(
+  dosevarkat = "shf_bbldosemax_cat",
+  novar = "shf_bbl",
+  treatlabs = c("No BB", "BB dose <50%", "BB dose \u2265150%"),
+  sex = "Female",
+  impdatasex = impdatafemale
+))
+foresthr <- bind_rows(foresthr, foresthreventmod(
+  dosevarkat = "shf_mradosemax_cat",
+  novar = "shf_mra",
+  treatlabs = c("No MRA", "MRA"),
+  sex = "Female",
+  impdatasex = impdatafemale
+))
+
+foresthrfemale <- rbind(
+  foresthr[1:3, ], rep(NA, 8),
+  foresthr[4:6, ], rep(NA, 8),
+  foresthr[7:8, ]
+) %>%
+  arrange(desc(row_number()))
+
+# Male
+
+impdatamale <- miceadds::subset_datlist(impdata, expr_subset = pdata$shf_sex == "Male")
+
+foresthr <- foresthreventmod(
+  dosevarkat = "shf_rasdosemax_cat",
+  novar = "shf_ras",
+  treatlabs = c("No RASi", "RASi dose <50%", "RASi dose \u2265150%"),
+  sex = "Male",
+  impdatasex = impdatamale
+)
+foresthr <- bind_rows(foresthr, foresthreventmod(
+  dosevarkat = "shf_bbldosemax_cat",
+  novar = "shf_bbl",
+  treatlabs = c("No BB", "BB dose <50%", "BB dose \u2265150%"),
+  sex = "Male",
+  impdatasex = impdatamale
+))
+foresthr <- bind_rows(foresthr, foresthreventmod(
+  dosevarkat = "shf_mradosemax_cat",
+  novar = "shf_mra",
+  treatlabs = c("No MRA", "MRA"),
+  sex = "Male",
+  impdatasex = impdatamale
+))
+
+foresthrmale <- rbind(
+  foresthr[1:3, ], rep(NA, 8),
+  foresthr[4:6, ], rep(NA, 8),
+  foresthr[7:8, ]
+) %>%
+  arrange(desc(row_number()))
+```
+
+```{r hreventfemale, cache=cacheon, dependson="hreventmodsex", fig.cap="Forestplot - adjusted association between systolic blood pressure/treatments and CVD/First HFH - Female"}
+
+nf <- nrow(foresthrfemale)
+# exp(min(loglci, na.rm = T))
+# exp(max(loguci, na.rm = T))
+
+# c(bottom, left, top, right)
+par(mar = c(3, 17, 0, 2) + 0.2)
+
+cextext <- 0.9
+
+plot(foresthrfemale$loghr, 1:nf,
+  cex = 1.2,
+  xlim = c(
+    log(.85),
+    log(1)
+  ),
+  xlab = NA,
+  ylim = c(1, nf + 2),
+  axes = FALSE,
+  ylab = NA,
+  main = NA,
+  type = "p",
+  pch = 22,
+  bg = global_kicols[1],
+  col = global_kicols[1]
+)
+
+for (i in 1:nf) {
+  lines(c(foresthrfemale$lci[i], foresthrfemale$uci[i]), c(i, i),
+    col = global_kicols[1], cex = 2
+  )
+}
+
+matplot(c(log(1), log(1)), c(-1, nf), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+axis(1,
+  cex.axis = cextext,
+  at = log(seq(.85, 1, .05)),
+  labels = seq(.85, 1, .05),
+  gap.axis = -1000000
+)
+axis(1,
+  cex.axis = cextext,
+  at = (log(.85) - abs(log(1))) / 2,
+  labels = "Adjusted HR (95% CI)",
+  line = 1,
+  tick = FALSE
+)
+axis(2,
+  at = 1:nf,
+  labels = foresthrfemale$lev,
+  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
+)
+axis(2,
+  at = c(1:(nf + 1)),
+  labels = c(foresthrfemale$n, "n event/N"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 7.5, hadj = 0.5
+)
+axis(2,
+  at = c(1:nf, nf + 1, nf + 2),
+  labels = c(foresthrfemale$hrci, "HR (95% CI)", "Adjusted"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 2, hadj = 0.5
+)
+```
+
+```{r hreventmale, cache=cacheon, dependson="hreventmodsex", fig.cap="Forestplot - adjusted association between systolic blood pressure/treatments and CVD/First HFH - Male"}
+
+nf <- nrow(foresthrmale)
+# exp(min(loglci, na.rm = T))
+# exp(max(loguci, na.rm = T))
+
+# c(bottom, left, top, right)
+par(mar = c(3, 17, 0, 2) + 0.2)
+
+cextext <- 0.9
+
+plot(foresthrmale$loghr, 1:nf,
+  cex = 1.2,
+  xlim = c(
+    log(.85),
+    log(1)
+  ),
+  xlab = NA,
+  ylim = c(1, nf + 2),
+  axes = FALSE,
+  ylab = NA,
+  main = NA,
+  type = "p",
+  pch = 22,
+  bg = global_kicols[1],
+  col = global_kicols[1]
+)
+
+for (i in 1:nf) {
+  lines(c(foresthrmale$lci[i], foresthrmale$uci[i]), c(i, i),
+    col = global_kicols[1], cex = 2
+  )
+}
+
+matplot(c(log(1), log(1)), c(-1, nf), type = "l", lwd = 1, lty = 1, add = TRUE, col = 1)
+
+axis(1,
+  cex.axis = cextext,
+  at = log(seq(.85, 1, .05)),
+  labels = seq(.85, 1, .05),
+  gap.axis = -1000000
+)
+axis(1,
+  cex.axis = cextext,
+  at = (log(.85) - abs(log(1))) / 2,
+  labels = "Adjusted HR (95% CI)",
+  line = 1,
+  tick = FALSE
+)
+axis(2,
+  at = 1:nf,
+  labels = foresthrmale$lev,
+  cex.axis = cextext, tick = FALSE, las = 2, line = 16, hadj = 0
+)
+axis(2,
+  at = c(1:(nf + 1)),
+  labels = c(foresthrmale$n, "n event/N"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 7.5, hadj = 0.5
+)
+axis(2,
+  at = c(1:nf, nf + 1, nf + 2),
+  labels = c(foresthrmale$hrci, "HR (95% CI)", "Adjusted"),
+  cex.axis = cextext, tick = FALSE, las = 2, line = 2, hadj = 0.5
+)
+```

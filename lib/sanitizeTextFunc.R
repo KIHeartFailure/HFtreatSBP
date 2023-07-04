@@ -1,5 +1,5 @@
 ## used when escape = FALSE needed in kableExtra table (for example when needing footnotes)
-sanitizeTextFunc = function(str) {
+sanitizeTextFunc <- function(str) {
   result <- str
   result <- gsub("\\\\", "SANITIZE.BACKSLASH", result)
   result <- gsub("$", "\\$", result, fixed = TRUE)
